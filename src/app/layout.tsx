@@ -6,9 +6,7 @@ import { ModalProvider } from "@/lib/ModalContext";
 import { TransactionModal } from "@/components/ui/TransactionModal";
 import { CategoryModal } from "@/components/ui/CategoryModal";
 import { AccountModal } from "@/components/ui/AccountModal";
-
-import { storage } from "@/lib/storage";
-import { useEffect } from "react";
+import { StorageInitializer } from "@/components/StorageInitializer";
 
 export const metadata: Metadata = {
   title: "Clarity | Personal Finance",
@@ -20,13 +18,10 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  useEffect(() => {
-    storage.init();
-  }, []);
-
   return (
     <html lang="en" className="dark">
       <body className="font-sans min-h-screen bg-[var(--bg-color)] text-[var(--text-color)] antialiased selection:bg-blue-500/30 overflow-hidden">
+        <StorageInitializer />
         <ModalProvider>
           <div className="flex h-screen overflow-hidden">
             <Sidebar />
