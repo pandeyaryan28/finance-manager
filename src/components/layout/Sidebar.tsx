@@ -10,6 +10,7 @@ import {
     PieChart,
     Wallet,
     BarChart3,
+    LineChart,
     LogOut,
     Settings,
 } from "lucide-react";
@@ -17,6 +18,7 @@ import {
 const navItems = [
     { name: "Dashboard", href: "/", icon: LayoutDashboard },
     { name: "Transactions", href: "/transactions", icon: ArrowRightLeft },
+    { name: "Analytics", href: "/analytics", icon: LineChart },
     { name: "Budgets", href: "/budgets", icon: PieChart },
     { name: "Net Worth", href: "/net-worth", icon: Wallet },
     { name: "Reports", href: "/reports", icon: BarChart3 },
