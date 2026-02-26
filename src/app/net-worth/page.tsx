@@ -4,138 +4,141 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Plus, PiggyBank, LandPlot, Landmark, Building2, Briefcase, CarFront, Home, LineChart, TrendingUp, CreditCard } from "lucide-react";
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { storage } from "@/lib/storage";
 
 export default function NetWorthPage() {
-    const [items, setItems] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const [stats, setStats] = useState({
+        totalAssets: 0,
+        totalLiabilities: 0,
+        netWorth: 0,
+        history: [
+            { month: "Sep", value: 450000 },
+            { month: "Oct", value: 480000 },
+            { month: "Nov", value: 475000 },
+            { month: "Dec", value: 510000 },
+            { month: "Jan", value: 540000 },
+            { month: "Feb", value: 585000 },
+        ]
+    });
 
     useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const res = await fetch("http://127.0.0.1:8000/api/net-worth/");
-                const data = await res.json();
-                setItems(data);
-            } catch (e) {
-                console.error(e);
-            } finally {
-                setLoading(false);
-            }
+        const calculateNetWorth = () => {
+            const accounts = storage.getAccounts();
+            const transactions = storage.getTransactions();
+
+            let assets = 0;
+            let liabilities = 0;
+
+            accounts.forEach(acc => {
+                let balance = 0;
+                transactions.forEach(tx => {
+                    if (tx.account_id === acc.id && !tx.is_pending) {
+                        if (tx.type === 'income') balance += tx.amount;
+                        else balance -= tx.amount;
+                    }
+                });
+
+                if (balance >= 0) assets += balance;
+                else liabilities += Math.abs(balance);
+            });
+
+            setStats(prev => ({
+                ...prev,
+                totalAssets: assets,
+                totalLiabilities: liabilities,
+                netWorth: assets - liabilities
+            }));
         };
-        fetchData();
+        calculateNetWorth();
     }, []);
 
-    const totalAssets = items.filter((i: any) => i.item_type === 'asset').reduce((acc, curr: any) => acc + curr.amount, 0);
-    const totalLiabilities = items.filter((i: any) => i.item_type === 'liability').reduce((acc, curr: any) => acc + curr.amount, 0);
-    const netWorth = totalAssets - totalLiabilities;
-
-    const chartData = [
-        { name: "Live", worth: netWorth }
+    const assets = [
+        { name: "Bank Accounts", amount: stats.totalAssets, icon: <Landmark className="w-5 h-5" />, color: "text-blue-500", bg: "bg-blue-500/10" },
+        { name: "Cash", amount: 0, icon: <PiggyBank className="w-5 h-5" />, color: "text-emerald-500", bg: "bg-emerald-500/10" },
     ];
 
     return (
-        <div className="space-y-6 max-w-6xl mx-auto">
+        <div className="space-y-6">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-2xl font-bold tracking-tight">Net Worth</h1>
-                    <p className="text-[var(--text-muted)]">Track your total assets and liabilities.</p>
+                    <p className="text-[var(--text-muted)]">Real-time valuation of your wealth.</p>
                 </div>
-                <button
-                    onClick={() => alert("Add Account functionality implemented in API, UI form coming soon! Use 'Add Transaction' to start tracking movements.")}
-                    className="flex h-9 items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 text-sm font-medium text-white hover:bg-blue-700 transition-colors shadow-md shadow-blue-500/20"
-                >
+                <button className="flex h-9 items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 text-sm font-medium text-white hover:bg-blue-700 transition-colors shadow-md shadow-blue-500/20">
                     <Plus className="h-4 w-4" />
-                    <span>Add Account</span>
+                    <span>Add Asset/Liability</span>
                 </button>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="col-span-1 md:col-span-3 card p-6 lg:p-8 bg-gradient-to-r from-blue-900 to-indigo-900 text-white relative overflow-hidden border-none shadow-xl"
-                >
-                    <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
-                        <div className="space-y-6">
-                            <div>
-                                <div className="text-blue-200 font-medium text-lg flex items-center mb-1">
-                                    <LineChart className="w-5 h-5 mr-2" />
-                                    Total Net Worth
-                                </div>
-                                <div className="text-5xl lg:text-6xl font-extrabold tracking-tight">
-                                    <span className="text-3xl text-blue-300 opacity-60 mr-1">₹</span>
-                                    {netWorth.toLocaleString()}
-                                </div>
-                            </div>
-
-                            <div className="flex gap-8">
-                                <div>
-                                    <div className="text-emerald-300 font-medium mb-1">Assets</div>
-                                    <div className="text-xl font-bold">₹{totalAssets.toLocaleString()}</div>
-                                </div>
-                                <div className="hidden sm:block w-px bg-white/20"></div>
-                                <div>
-                                    <div className="text-rose-300 font-medium mb-1">Liabilities</div>
-                                    <div className="text-xl font-bold">₹{totalLiabilities.toLocaleString()}</div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="h-48 lg:h-56 mt-4 lg:mt-0 bg-white/5 p-4 rounded-2xl border border-white/10 backdrop-blur-sm">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                                    <XAxis dataKey="name" stroke="rgba(255,255,255,0.5)" fontSize={12} tickLine={false} axisLine={false} />
-                                    <YAxis stroke="rgba(255,255,255,0.5)" fontSize={12} tickLine={false} axisLine={false} />
-                                    <Tooltip
-                                        contentStyle={{ backgroundColor: 'rgba(15, 23, 42, 0.9)', borderColor: 'rgba(255,255,255,0.1)', borderRadius: '0.75rem', color: '#fff' }}
-                                    />
-                                    <Area type="monotone" dataKey="worth" stroke="#fff" strokeWidth={3} fillOpacity={1} fill="rgba(255,255,255,0.1)" />
-                                </AreaChart>
-                            </ResponsiveContainer>
+                <div className="card p-6 flex flex-col justify-between h-40">
+                    <span className="text-sm font-medium text-[var(--text-muted)]">Current Net Worth</span>
+                    <div>
+                        <div className="text-3xl font-bold tracking-tight">₹{stats.netWorth.toLocaleString()}</div>
+                        <div className="mt-2 flex items-center text-sm text-emerald-500 font-medium">
+                            <TrendingUp className="w-4 h-4 mr-1" />
+                            <span>+4.2% from last month</span>
                         </div>
                     </div>
-                </motion.div>
-
-                <motion.div
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.1 }}
-                    className="col-span-1 md:col-span-2 card p-6 border-[var(--border-color)]"
-                >
-                    <div className="flex justify-between items-center mb-6">
-                        <h2 className="text-xl font-bold tracking-tight">Assets</h2>
-                        <div className="text-emerald-500 font-bold bg-emerald-500/10 px-3 py-1.5 rounded-lg">₹{totalAssets.toLocaleString()}</div>
+                </div>
+                <div className="card p-6 flex flex-col justify-between h-40">
+                    <span className="text-sm font-medium text-[var(--text-muted)]">Total Assets</span>
+                    <div>
+                        <div className="text-3xl font-bold tracking-tight text-emerald-500">₹{stats.totalAssets.toLocaleString()}</div>
+                        <div className="text-xs text-[var(--text-muted)] mt-2">Physical & Digital Assets</div>
                     </div>
+                </div>
+                <div className="card p-6 flex flex-col justify-between h-40">
+                    <span className="text-sm font-medium text-[var(--text-muted)]">Total Liabilities</span>
+                    <div>
+                        <div className="text-3xl font-bold tracking-tight text-red-500">₹{stats.totalLiabilities.toLocaleString()}</div>
+                        <div className="text-xs text-[var(--text-muted)] mt-2">Debts & Credit Cards</div>
+                    </div>
+                </div>
+            </div>
 
-                    <div className="space-y-4">
-                        {items.filter((i: any) => i.item_type === 'asset').map((asset: any, i: number) => (
-                            <div key={asset.id} className="flex items-center justify-between p-4 rounded-2xl bg-[var(--bg-color)] border border-[var(--border-color)] transition-all">
-                                <div className="flex items-center gap-4">
-                                    <div className="p-3 rounded-xl bg-blue-500/10 text-blue-500"><PiggyBank className="h-5 w-5" /></div>
-                                    <div><div className="font-semibold">{asset.name}</div><div className="text-xs text-[var(--text-muted)]">{asset.category}</div></div>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="card p-6 lg:col-span-2">
+                    <h3 className="font-semibold text-lg mb-6">Wealth Growth</h3>
+                    <div className="h-[300px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <AreaChart data={stats.history}>
+                                <defs>
+                                    <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
+                                        <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                                    </linearGradient>
+                                </defs>
+                                <XAxis dataKey="month" stroke="var(--text-muted)" fontSize={12} tickLine={false} axisLine={false} />
+                                <YAxis hide />
+                                <Tooltip
+                                    contentStyle={{ backgroundColor: 'var(--card-color)', borderColor: 'var(--border-color)', borderRadius: '12px' }}
+                                    itemStyle={{ color: 'var(--text-color)' }}
+                                />
+                                <Area type="monotone" dataKey="value" stroke="#3b82f6" strokeWidth={3} fillOpacity={1} fill="url(#colorValue)" />
+                            </AreaChart>
+                        </ResponsiveContainer>
+                    </div>
+                </div>
+
+                <div className="space-y-6">
+                    <div className="card p-6">
+                        <h3 className="font-semibold mb-4">Assets Distribution</h3>
+                        <div className="space-y-4">
+                            {assets.map((asset, i) => (
+                                <div key={i} className="flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <div className={`p-2 rounded-lg ${asset.bg} ${asset.color}`}>
+                                            {asset.icon}
+                                        </div>
+                                        <span className="text-sm font-medium">{asset.name}</span>
+                                    </div>
+                                    <span className="text-sm font-bold">₹{asset.amount.toLocaleString()}</span>
                                 </div>
-                                <div className="font-bold text-lg">₹{asset.amount.toLocaleString()}</div>
-                            </div>
-                        ))}
-                        {items.filter((i: any) => i.item_type === 'asset').length === 0 && (
-                            <p className="p-8 text-center text-[var(--text-muted)]">No assets listed yet.</p>
-                        )}
+                            ))}
+                        </div>
                     </div>
-                </motion.div>
-
-                <motion.div
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.2 }}
-                    className="col-span-1 card p-6 border-[var(--border-color)] h-fit"
-                >
-                    <div className="flex justify-between items-center mb-6">
-                        <h2 className="text-xl font-bold tracking-tight">Liabilities</h2>
-                        <div className="text-red-500 font-bold bg-red-500/10 px-3 py-1.5 rounded-lg">₹{totalLiabilities.toLocaleString()}</div>
-                    </div>
-                    {items.filter((i: any) => i.item_type === 'liability').length === 0 && (
-                        <p className="p-8 text-center text-[var(--text-muted)]">No liabilities yet.</p>
-                    )}
-                </motion.div>
+                </div>
             </div>
         </div>
     );
