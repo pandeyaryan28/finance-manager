@@ -26,7 +26,8 @@ import {
     Bar,
     XAxis,
     YAxis,
-    CartesianGrid
+    CartesianGrid,
+    LabelList
 } from "recharts";
 import { storage, Transaction, Category, Account } from "@/lib/storage";
 
@@ -277,6 +278,12 @@ export default function AnalyticsPage() {
                                         {accountData.map((entry, index) => (
                                             <Cell key={`cell-${index}`} fill={entry.value < 0 ? '#ff3b3b' : '#ffffff'} fillOpacity={0.9} />
                                         ))}
+                                        <LabelList
+                                            dataKey="value"
+                                            position="right"
+                                            formatter={(val: any) => `₹${Math.abs(Number(val) || 0).toLocaleString()}`}
+                                            style={{ fill: 'white', fontSize: 10, fontWeight: 'bold' }}
+                                        />
                                     </Bar>
                                 </BarChart>
                             </ResponsiveContainer>
@@ -323,7 +330,7 @@ export default function AnalyticsPage() {
                                         ₹{acc.value.toLocaleString()}
                                     </span>
                                     <div className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--border-color)] font-bold">
-                                        SHARE: {acc.value > 0 ? ((acc.value / Math.max(1, summary.netBalance)) * 100).toFixed(1) : 0}%
+                                        {acc.value > 0 ? ((acc.value / Math.max(1, summary.netBalance)) * 100).toFixed(1) : 0}%
                                     </div>
                                 </div>
                             </div>

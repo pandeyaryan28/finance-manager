@@ -36,10 +36,7 @@
     --selection-color: #000;
   }
 
-  * {
-    cursor: none !important;
-    /* Custom cinematic cursor will be handled via JS */
-  }
+  /* Custom Cinematic Cursor removed - restoring default browser pointer */
 
   body {
     background-color: var(--bg-color);
@@ -91,42 +88,6 @@
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
-}
-
-/* Classic Aesthetic Cursor */
-.custom-cursor {
-  width: 6px;
-  height: 6px;
-  background: white;
-  border-radius: 50%;
-  position: fixed;
-  pointer-events: none;
-  z-index: 10000;
-  mix-blend-mode: difference;
-}
-
-.custom-cursor-follower {
-  width: 32px;
-  height: 32px;
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  border-radius: 50%;
-  position: fixed;
-  pointer-events: none;
-  z-index: 9999;
-  background: transparent;
-  backdrop-filter: blur(2px);
-  -webkit-backdrop-filter: blur(2px);
-  transition: width 0.4s cubic-bezier(0.23, 1, 0.32, 1),
-    height 0.4s cubic-bezier(0.23, 1, 0.32, 1),
-    background 0.4s ease,
-    border-color 0.4s ease;
-}
-
-.custom-cursor-follower.hovering {
-  width: 60px;
-  height: 60px;
-  background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(255, 255, 255, 0.8);
 }
 
 .transitioning-content {

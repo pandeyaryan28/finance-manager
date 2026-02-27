@@ -19,8 +19,6 @@ import PageTransitionShader from "./PageTransitionShader";
 export default function MotionProvider({ children }: { children: React.ReactNode }) {
     const [lenis, setLenis] = useState<Lenis | null>(null);
     const [isContentVisible, setIsContentVisible] = useState(false);
-    const cursorRef = useRef<HTMLDivElement>(null);
-    const followerRef = useRef<HTMLDivElement>(null);
     const pathname = usePathname();
 
     useEffect(() => {
@@ -47,38 +45,6 @@ export default function MotionProvider({ children }: { children: React.ReactNode
         };
     }, []);
 
-    // Optimized Custom Cursor Logic
-    useEffect(() => {
-        const xTo = gsap.quickTo(cursorRef.current, "x", { duration: 0.1, ease: "power3" });
-        const yTo = gsap.quickTo(cursorRef.current, "y", { duration: 0.1, ease: "power3" });
-        const xFollowerTo = gsap.quickTo(followerRef.current, "x", { duration: 0.3, ease: "power3" });
-        const yFollowerTo = gsap.quickTo(followerRef.current, "y", { duration: 0.3, ease: "power3" });
-
-        const moveCursor = (e: MouseEvent) => {
-            const { clientX, clientY, target } = e;
-
-            // Offset for centering the dots/rings
-            xTo(clientX - 3);
-            yTo(clientY - 3);
-            xFollowerTo(clientX - 16);
-            yFollowerTo(clientY - 16);
-
-            // Hover effect for interactive elements
-            const isHovering = (target as HTMLElement).closest('button, a, .glass, .card');
-            if (isHovering) {
-                followerRef.current?.classList.add('hovering');
-                // Adjust follower offset for expanded size (60px / 2 = 30)
-                xFollowerTo(clientX - 30);
-                yFollowerTo(clientY - 30);
-            } else {
-                followerRef.current?.classList.remove('hovering');
-            }
-        };
-
-        window.addEventListener("mousemove", moveCursor);
-        return () => window.removeEventListener("mousemove", moveCursor);
-    }, []);
-
     // Handle Reveal
     useEffect(() => {
         setIsContentVisible(false);
@@ -90,8 +56,6 @@ export default function MotionProvider({ children }: { children: React.ReactNode
         <MotionContext.Provider value={{ lenis }}>
             <PageTransitionShader />
             <div className="noise" />
-            <div ref={cursorRef} className="custom-cursor hidden md:block" />
-            <div ref={followerRef} className="custom-cursor-follower hidden md:box-border md:block" />
             <div className={`transitioning-content ${isContentVisible ? "show" : ""}`}>
                 {children}
             </div>
