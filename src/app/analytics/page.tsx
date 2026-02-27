@@ -269,12 +269,12 @@ export default function AnalyticsPage() {
                                     />
                                     <Tooltip
                                         cursor={{ fill: 'var(--bg-color)', opacity: 0.4 }}
-                                        contentStyle={{ backgroundColor: 'var(--card-color)', borderColor: 'var(--border-color)', borderRadius: '12px' }}
-                                        formatter={(value: any) => `₹${value.toLocaleString()}`}
+                                        contentStyle={{ backgroundColor: 'black', borderColor: 'rgba(255,255,255,0.1)', borderRadius: '12px', color: 'white' }}
+                                        formatter={(value: any) => [`₹${Math.abs(value).toLocaleString()}`, value < 0 ? 'Debt' : 'Available']}
                                     />
-                                    <Bar dataKey="value" name="Balance" radius={[0, 4, 4, 0]} barSize={30}>
+                                    <Bar dataKey="value" radius={[0, 4, 4, 0]} barSize={30}>
                                         {accountData.map((entry, index) => (
-                                            <Cell key={`cell-${index}`} fill={entry.value < 0 ? '#ef4444' : '#3b82f6'} />
+                                            <Cell key={`cell-${index}`} fill={entry.value < 0 ? '#ff4d4d' : '#ffffff'} />
                                         ))}
                                     </Bar>
                                 </BarChart>

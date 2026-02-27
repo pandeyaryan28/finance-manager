@@ -31,11 +31,11 @@ export default function RootLayout({
         <MotionProvider>
           <ModalProvider>
             <GradientMesh />
-            <div className="flex h-screen overflow-hidden relative z-10">
+            <div className="flex relative z-10">
               <Sidebar />
-              <div className="relative flex flex-1 flex-col overflow-y-auto overflow-x-hidden sm:ml-64 transition-all">
+              <div className="flex-1 w-full sm:ml-64">
                 <Header />
-                <main className="flex-1 w-full max-w-7xl mx-auto p-4 sm:p-6 md:p-8">
+                <main className="max-w-7xl mx-auto p-4 sm:p-6 md:p-8">
                   {children}
                 </main>
               </div>

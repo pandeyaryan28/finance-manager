@@ -44,19 +44,18 @@ export default function MotionProvider({ children }: { children: React.ReactNode
         };
     }, []);
 
-    // Custom Cursor Logic
+    // Optimized Custom Cursor Logic
     useEffect(() => {
+        const xTo = gsap.quickTo(cursorRef.current, "x", { duration: 0.1, ease: "power3" });
+        const yTo = gsap.quickTo(cursorRef.current, "y", { duration: 0.1, ease: "power3" });
+        const xFollowerTo = gsap.quickTo(followerRef.current, "x", { duration: 0.3, ease: "power3" });
+        const yFollowerTo = gsap.quickTo(followerRef.current, "y", { duration: 0.3, ease: "power3" });
+
         const moveCursor = (e: MouseEvent) => {
-            gsap.to(cursorRef.current, {
-                x: e.clientX,
-                y: e.clientY,
-                duration: 0.1,
-            });
-            gsap.to(followerRef.current, {
-                x: e.clientX,
-                y: e.clientY,
-                duration: 0.3,
-            });
+            xTo(e.clientX);
+            yTo(e.clientY);
+            xFollowerTo(e.clientX);
+            yFollowerTo(e.clientY);
         };
 
         window.addEventListener("mousemove", moveCursor);

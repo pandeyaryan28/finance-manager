@@ -43,20 +43,22 @@ function TransitionPlane({ onComplete }: { onComplete: () => void }) {
     useEffect(() => {
         // Trigger transition on path change
         let start = 0;
-        const duration = 1.5;
+        const duration = 1.0;
+        uniforms.uProgress.value = 1.5; // Start fully covered
+
         const animate = (time: number) => {
             if (!start) start = time;
             const elapsed = (time - start) / 1000;
             const p = Math.min(elapsed / duration, 1);
 
-            // Simple easing: cubic in-out
-            const easedP = p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2;
+            // Reverse easing for reveal
+            const easedP = 1 - (p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2);
 
-            uniforms.uProgress.value = easedP * 1.5; // Multiply to ensure it covers full screen
+            uniforms.uProgress.value = easedP * 1.5;
             if (p < 1) {
                 requestAnimationFrame(animate);
             } else {
-                setTimeout(onComplete, 200);
+                onComplete();
             }
         };
 

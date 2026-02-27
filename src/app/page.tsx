@@ -138,122 +138,130 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="space-y-32 pb-32">
+    <div className="space-y-12 pb-32">
       {/* Hero Section */}
-      <section className="relative h-[90vh] flex flex-col items-center justify-center text-center">
+      <section className="relative h-[60vh] flex flex-col items-center justify-center text-center">
         <HeroVisual />
         <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5, duration: 1 }}
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 1 }}
           className="z-10"
         >
-          <h1 className="text-8xl font-black tracking-tighter text-luxury mb-6">
+          <h1 className="text-7xl font-black tracking-tighter text-luxury mb-4">
             CLARITY
           </h1>
-          <p className="text-xl text-dim max-w-lg mx-auto mb-10">
-            A spatial environment for hyper-precision financial orchestration.
-          </p>
           <div className="flex gap-4 justify-center">
             <Magnetic>
-              <button
-                onClick={() => openModal("add-expense")}
-                className="px-10 py-4 bg-white text-black font-bold rounded-full hover:scale-105 transition-transform"
-              >
-                Pulse Transaction
+              <button onClick={() => openModal("add-expense")} className="px-8 py-3 bg-white text-black font-bold rounded-full text-sm">
+                Record Expense
               </button>
             </Magnetic>
             <Magnetic>
-              <button
-                onClick={() => openModal("add-income")}
-                className="px-10 py-4 glass text-white font-bold rounded-full hover:scale-105 transition-transform"
-              >
-                Infuse Capital
+              <button onClick={() => openModal("add-income")} className="px-8 py-3 glass text-white font-bold rounded-full text-sm">
+                Add Income
               </button>
             </Magnetic>
           </div>
         </motion.div>
       </section>
 
-      {/* Main Dashboard Grid */}
       <motion.div
         variants={containerVariants}
         initial="hidden"
         whileInView="show"
         viewport={{ once: true }}
-        className="space-y-8"
+        className="px-4 space-y-12"
       >
-        <div className="flex flex-col sm:flex-row items-end justify-between gap-4">
-          <div>
-            <h2 className="text-4xl font-bold tracking-tight text-luxury">Operational Overview</h2>
-            <p className="text-dim">Real-time telemetry of your financial assets.</p>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {stats.accounts.map((acc) => (
-            <motion.div
-              key={acc.id}
-              variants={itemVariants}
-              className="glass p-6 group hover:translate-y-[-4px] transition-all"
-            >
-              <div className="flex items-center justify-between mb-4">
-                <div className="p-2 rounded-xl bg-white/5 text-white/50">
-                  {getAccountIcon(acc.type)}
-                </div>
-                <span className="text-[10px] font-bold text-dim uppercase tracking-widest">{acc.name}</span>
-              </div>
-              <div className={`text-2xl font-bold ${acc.balance < 0 ? 'text-red-400' : 'text-white'}`}>
-                ₹{acc.balance.toLocaleString()}
-              </div>
-            </motion.div>
-          ))}
+        {/* Metric Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <motion.div variants={itemVariants} className="glass p-6 rounded-3xl">
+            <p className="text-[10px] font-bold text-dim uppercase tracking-widest mb-1">Liquid Cash</p>
+            <h3 className="text-3xl font-bold">₹{stats.balance.toLocaleString()}</h3>
+          </motion.div>
+          <motion.div variants={itemVariants} className="glass p-6 rounded-3xl">
+            <p className="text-[10px] font-bold text-dim uppercase tracking-widest mb-1">Total Debt</p>
+            <h3 className="text-3xl font-bold text-red-400">₹{stats.creditDebt.toLocaleString()}</h3>
+          </motion.div>
+          <motion.div variants={itemVariants} className="glass p-6 rounded-3xl">
+            <p className="text-[10px] font-bold text-dim uppercase tracking-widest mb-1">Monthly Inflow</p>
+            <h3 className="text-3xl font-bold text-emerald-400">₹{stats.income.toLocaleString()}</h3>
+          </motion.div>
+          <motion.div variants={itemVariants} className="glass p-6 rounded-3xl">
+            <p className="text-[10px] font-bold text-dim uppercase tracking-widest mb-1">Monthly Outflow</p>
+            <h3 className="text-3xl font-bold text-amber-400">₹{stats.expenses.toLocaleString()}</h3>
+          </motion.div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <motion.div variants={itemVariants} className="glass p-8 lg:col-span-2 flex flex-col">
-            <h3 className="font-bold text-xl mb-8">Liquidity Vector</h3>
-            <div className="h-80 w-full">
+          {/* Main Chart */}
+          <motion.div variants={itemVariants} className="glass p-8 rounded-[2rem] lg:col-span-2">
+            <div className="flex items-center justify-between mb-8">
+              <h3 className="text-xl font-bold">Cash Velocity</h3>
+              <div className="flex gap-4 text-[10px] font-bold uppercase tracking-widest">
+                <span className="flex items-center gap-1.5"><div className="w-1.5 h-1.5 rounded-full bg-blue-500" /> Income</span>
+                <span className="flex items-center gap-1.5"><div className="w-1.5 h-1.5 rounded-full bg-red-500" /> Expense</span>
+              </div>
+            </div>
+            <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={stats.chartData}>
                   <defs>
-                    <linearGradient id="colorIncome" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#ffffff" stopOpacity={0.3} />
-                      <stop offset="95%" stopColor="#ffffff" stopOpacity={0} />
+                    <linearGradient id="fade" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="white" stopOpacity={0.1} />
+                      <stop offset="95%" stopColor="white" stopOpacity={0} />
                     </linearGradient>
                   </defs>
-                  <Tooltip
-                    contentStyle={{ backgroundColor: 'rgba(0,0,0,0.8)', borderColor: 'rgba(255,255,255,0.1)', borderRadius: '1rem', backdropFilter: 'blur(10px)' }}
-                  />
-                  <Area type="monotone" dataKey="income" stroke="#ffffff" strokeWidth={4} fillOpacity={1} fill="url(#colorIncome)" />
+                  <Tooltip contentStyle={{ backgroundColor: 'black', border: 'none', borderRadius: '1rem' }} />
+                  <Area type="monotone" dataKey="income" stroke="#ffffff" fill="url(#fade)" strokeWidth={3} />
+                  <Area type="monotone" dataKey="expense" stroke="#ef4444" fill="transparent" strokeWidth={1} strokeDasharray="5 5" />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
           </motion.div>
 
-          <motion.div variants={itemVariants} className="space-y-6">
-            <MorphCard />
+          {/* Recent Ledger */}
+          <motion.div variants={itemVariants} className="glass p-8 rounded-[2rem]">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-bold">Recent Pulse</h3>
+              <Link href="/transactions" className="text-xs text-dim hover:text-white transition-colors">View All</Link>
+            </div>
+            <div className="space-y-4">
+              {stats.transactions.map((tx, i) => (
+                <div key={tx.id} className="flex items-center justify-between p-2 hover:bg-white/5 rounded-xl transition-colors">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${tx.type === 'expense' ? 'bg-red-500/10 text-red-500' : 'bg-emerald-500/10 text-emerald-500'}`}>
+                      {tx.type === 'expense' ? <ArrowDownRight size={14} /> : <ArrowUpRight size={14} />}
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold truncate max-w-[120px]">{tx.title}</p>
+                      <p className="text-[10px] text-dim">{tx.date}</p>
+                    </div>
+                  </div>
+                  <p className={`text-sm font-bold ${tx.type === 'expense' ? 'text-white' : 'text-emerald-400'}`}>
+                    {tx.type === 'expense' ? '-' : '+'}₹{Math.abs(tx.amount).toLocaleString()}
+                  </p>
+                </div>
+              ))}
+            </div>
           </motion.div>
         </div>
       </motion.div>
 
-      {/* Storytelling Section */}
+      {/* Storytelling & Features */}
       <StorySection />
 
-      {/* Footer / CTA */}
-      <section className="text-center py-32">
-        <motion.div
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          className="max-w-4xl mx-auto"
-        >
-          <h2 className="text-6xl font-black mb-8">Architect Your Future.</h2>
-          <Magnetic>
-            <Link href="/analytics" className="px-12 py-5 bg-white text-black text-xl font-bold rounded-full inline-block">
-              Open Strategy Engine
-            </Link>
-          </Magnetic>
-        </motion.div>
+      <div className="max-w-xl mx-auto px-4">
+        <MorphCard />
+      </div>
+
+      <section className="text-center py-24 px-4">
+        <h2 className="text-5xl font-black mb-12 text-luxury">Master Your Assets.</h2>
+        <Magnetic>
+          <Link href="/analytics" className="px-12 py-5 bg-white text-black font-bold rounded-full text-lg shadow-2xl">
+            Open Analytics Engine
+          </Link>
+        </Magnetic>
       </section>
     </div>
   );
