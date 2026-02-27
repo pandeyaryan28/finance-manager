@@ -7,6 +7,7 @@ import { TransactionModal } from "@/components/ui/TransactionModal";
 import { CategoryModal } from "@/components/ui/CategoryModal";
 import { AccountModal } from "@/components/ui/AccountModal";
 import { CreditCardModal } from "@/components/ui/CreditCardModal";
+import CreditCardPaymentModal from "@/components/ui/CreditCardPaymentModal";
 import { LendingModal } from "@/components/ui/LendingModal";
 import { StorageInitializer } from "@/components/StorageInitializer";
 
@@ -38,6 +39,7 @@ export default function RootLayout({
           <CategoryModal />
           <AccountModal />
           <CreditCardModal />
+          <CreditCardPaymentModal />
           <LendingModal />
         </ModalProvider>
       </body>

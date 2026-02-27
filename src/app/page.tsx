@@ -42,20 +42,21 @@ export default function Dashboard() {
       try {
         const transactions = storage.getTransactions();
         const accounts = storage.getAccounts();
+        const creditSpends = storage.getCreditSpends();
+        const creditCards = storage.getCreditCards();
 
         let liquidIncome = 0;
         let liquidExpenses = 0;
-        let creditSpend = 0;
+        let totalCreditSpend = 0;
 
         transactions.forEach((t) => {
           if (t.is_pending) return;
-          if (t.credit_card_id) {
-            if (t.type === 'expense') creditSpend += t.amount;
-            else creditSpend -= t.amount;
-          } else {
-            if (t.type === 'income') liquidIncome += t.amount;
-            else liquidExpenses += t.amount;
-          }
+          if (t.type === 'income') liquidIncome += t.amount;
+          else liquidExpenses += t.amount;
+        });
+
+        creditSpends.forEach(s => {
+          totalCreditSpend += s.amount;
         });
 
         const accountsWithBalance = accounts.map((acc) => {
@@ -69,8 +70,6 @@ export default function Dashboard() {
           return { ...acc, balance: accBalance };
         });
 
-        // Fetch Credit Cards for summary
-        const creditCards = storage.getCreditCards();
         const totalCreditDebt = creditCards.reduce((acc, c) => acc + c.current_balance, 0);
         const totalCreditLimit = creditCards.reduce((acc, c) => acc + c.limit, 0);
 
@@ -91,6 +90,12 @@ export default function Dashboard() {
             }
           });
 
+          creditSpends.forEach(s => {
+            if (s.date === dateStr) {
+              dExpense += s.amount;
+            }
+          });
+
           return {
             name: format(date, 'MMM dd'),
             income: dIncome,
@@ -98,13 +103,13 @@ export default function Dashboard() {
           };
         });
 
-        const netLiquidBalance = liquidIncome - liquidExpenses;
-        const savingsRate = liquidIncome > 0 ? ((liquidIncome - liquidExpenses) / liquidIncome) * 100 : 0;
+        const totalExpenses = liquidExpenses + totalCreditSpend;
+        const savingsRate = liquidIncome > 0 ? ((liquidIncome - totalExpenses) / liquidIncome) * 100 : 0;
 
         setStats({
-          balance: netLiquidBalance,
+          balance: liquidIncome - liquidExpenses,
           income: liquidIncome,
-          expenses: liquidExpenses,
+          expenses: totalExpenses,
           savingsRate: Math.max(0, savingsRate),
           transactions: transactions.sort((a, b) => b.date.localeCompare(a.date)).slice(0, 5),
           accounts: accountsWithBalance,

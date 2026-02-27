@@ -49,29 +49,34 @@ export default function AnalyticsPage() {
                 const categories = storage.getCategories();
                 const accounts = storage.getAccounts();
                 const creditCards = storage.getCreditCards();
+                const creditSpends = storage.getCreditSpends();
 
                 let liquidIncome = 0;
                 let liquidExpenses = 0;
-                let creditSpend = 0;
+                let totalCreditSpend = 0;
 
                 // Category-wise Breakdown (Everything)
                 const catMap: Record<string, number> = {};
+
+                // Regular transactions
                 transactions.forEach(t => {
                     if (t.is_pending) return;
-
                     if (t.type === 'expense') {
                         const cat = categories.find(c => c.id === t.category_id);
                         const catName = cat?.name || "Other";
                         catMap[catName] = (catMap[catName] || 0) + t.amount;
-                    }
-
-                    if (t.credit_card_id) {
-                        if (t.type === 'expense') creditSpend += t.amount;
-                        else creditSpend -= t.amount;
+                        liquidExpenses += t.amount;
                     } else {
-                        if (t.type === 'income') liquidIncome += t.amount;
-                        else liquidExpenses += t.amount;
+                        liquidIncome += t.amount;
                     }
+                });
+
+                // Credit Card Spends
+                creditSpends.forEach(s => {
+                    const cat = categories.find(c => c.id === s.category_id);
+                    const catName = cat?.name || "Other";
+                    catMap[catName] = (catMap[catName] || 0) + s.amount;
+                    totalCreditSpend += s.amount;
                 });
 
                 const formattedCatData = Object.entries(catMap).map(([name, value]) => ({
@@ -102,7 +107,7 @@ export default function AnalyticsPage() {
                 setAccountData([...accData, ...creditData]);
                 setSummary({
                     totalIncome: liquidIncome,
-                    totalExpenses: liquidExpenses,
+                    totalExpenses: liquidExpenses + totalCreditSpend,
                     netBalance: liquidIncome - liquidExpenses,
                     creditDebt: creditCards.reduce((acc, c) => acc + c.current_balance, 0)
                 } as any);

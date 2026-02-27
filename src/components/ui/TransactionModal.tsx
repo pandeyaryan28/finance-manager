@@ -45,17 +45,27 @@ export function TransactionModal() {
 
         setLoading(true);
         try {
-            storage.addTransaction({
-                title: form.title,
-                amount: parseFloat(form.amount),
-                type: form.type,
-                date: form.date,
-                category_id: form.category_id,
-                account_id: form.is_credit_card ? "" : form.account_id,
-                credit_card_id: form.is_credit_card ? form.credit_card_id : undefined,
-                notes: form.notes,
-                is_pending: form.is_pending
-            });
+            if (form.is_credit_card) {
+                storage.addCreditSpend({
+                    card_id: form.credit_card_id,
+                    title: form.title,
+                    amount: parseFloat(form.amount),
+                    date: form.date,
+                    category_id: form.category_id,
+                    notes: form.notes
+                });
+            } else {
+                storage.addTransaction({
+                    title: form.title,
+                    amount: parseFloat(form.amount),
+                    type: form.type,
+                    date: form.date,
+                    category_id: form.category_id,
+                    account_id: form.account_id,
+                    notes: form.notes,
+                    is_pending: form.is_pending
+                });
+            }
 
             setSuccess(true);
             setTimeout(() => {

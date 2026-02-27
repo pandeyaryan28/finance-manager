@@ -9,13 +9,32 @@ import { storage, Transaction } from "@/lib/storage";
 export default function TransactionsPage() {
     const { openModal } = useModal();
     const [searchTerm, setSearchTerm] = useState("");
-    const [transactions, setTransactions] = useState<Transaction[]>([]);
+    const [allTransactions, setAllTransactions] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
     const fetchData = () => {
         try {
-            const data = storage.getTransactions();
-            setTransactions(data);
+            const regularTxs = storage.getTransactions().map(tx => ({ ...tx, origin: 'liquid' }));
+            const creditSpends = storage.getCreditSpends().map(s => ({
+                ...s,
+                type: 'expense' as const,
+                origin: 'credit',
+                account: { name: (s as any).card?.name || 'Credit Card' }
+            }));
+            const creditRepays = storage.getCreditRepayments().map(r => ({
+                ...r,
+                type: 'payment' as any,
+                origin: 'repayment',
+                title: `Payment to ${(r as any).card?.name}`,
+                category: { name: 'Repayment' },
+                account: { name: (r as any).account?.name || 'Bank' }
+            }));
+
+            const combined = [...regularTxs, ...creditSpends, ...creditRepays].sort((a, b) =>
+                new Date(b.date).getTime() - new Date(a.date).getTime()
+            );
+
+            setAllTransactions(combined);
         } catch (error) {
             console.error("Error fetching data:", error);
         } finally {
@@ -37,9 +56,9 @@ export default function TransactionsPage() {
         }
     };
 
-    const filteredTransactions = transactions.filter(t =>
+    const filteredTransactions = allTransactions.filter(t =>
         t.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (t as any).category?.name.toLowerCase().includes(searchTerm.toLowerCase())
+        (t.category?.name || "").toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     return (
@@ -103,12 +122,14 @@ export default function TransactionsPage() {
                                 className="grid grid-cols-[1fr_120px_100px_100px_80px] gap-4 p-4 items-center hover:bg-[var(--bg-color)] transition-colors group"
                             >
                                 <div className="flex items-center gap-3">
-                                    <div className={`flex items-center justify-center w-10 h-10 rounded-xl ${tx.type === 'expense' ? 'bg-red-500/10 text-red-500' : 'bg-emerald-500/10 text-emerald-500'} ${tx.is_pending ? 'opacity-50 grayscale' : ''}`}>
-                                        {tx.type === 'expense' ? <ArrowDownRight className="w-5 h-5" /> : <ArrowUpRight className="w-5 h-5" />}
+                                    <div className={`flex items-center justify-center w-10 h-10 rounded-xl ${tx.origin === 'repayment' ? 'bg-blue-500/10 text-blue-500' : tx.type === 'expense' ? 'bg-red-500/10 text-red-500' : 'bg-emerald-500/10 text-emerald-500'} ${tx.is_pending ? 'opacity-50 grayscale' : ''}`}>
+                                        {tx.origin === 'repayment' ? <ArrowUpRight className="w-5 h-5" /> : tx.type === 'expense' ? <ArrowDownRight className="w-5 h-5" /> : <ArrowUpRight className="w-5 h-5" />}
                                     </div>
                                     <div>
                                         <div className="flex items-center gap-2">
                                             <div className="font-semibold group-hover:text-blue-500 transition-colors">{tx.title}</div>
+                                            {tx.origin === 'credit' && <span className="text-[10px] px-1.5 py-0.5 bg-blue-500/10 text-blue-500 rounded font-bold uppercase">Credit</span>}
+                                            {tx.origin === 'repayment' && <span className="text-[10px] px-1.5 py-0.5 bg-emerald-500/10 text-emerald-500 rounded font-bold uppercase">Payment</span>}
                                             {tx.is_pending && <span className="text-[10px] px-1.5 py-0.5 bg-amber-500/10 text-amber-500 rounded font-bold uppercase">Pending</span>}
                                         </div>
                                         <div className="text-xs text-[var(--text-muted)]">{new Date(tx.date).toLocaleDateString()}</div>
@@ -116,14 +137,14 @@ export default function TransactionsPage() {
                                 </div>
                                 <div className="text-[var(--text-muted)] flex items-center">
                                     <span className="px-2 py-1 rounded-md bg-[var(--bg-color)] text-xs font-medium border border-[var(--border-color)] truncate max-w-full">
-                                        {(tx as any).category?.name || 'Uncategorized'}
+                                        {tx.category?.name || 'Uncategorized'}
                                     </span>
                                 </div>
                                 <div className="text-[var(--text-muted)]">
-                                    {(tx as any).creditCard?.name || (tx as any).account?.name || 'Wallet'}
+                                    {tx.account?.name || 'Wallet'}
                                 </div>
-                                <div className={`text-right font-bold text-base ${tx.type === 'expense' ? '' : 'text-emerald-500'}`}>
-                                    {tx.type === 'expense' ? '-' : '+'}₹{Math.abs(tx.amount).toLocaleString()}
+                                <div className={`text-right font-bold text-base ${tx.origin === 'repayment' ? 'text-blue-500' : tx.type === 'expense' ? '' : 'text-emerald-500'}`}>
+                                    {tx.type === 'expense' || tx.origin === 'repayment' ? '-' : '+'}₹{Math.abs(tx.amount).toLocaleString()}
                                 </div>
                                 <div className="flex justify-center gap-2">
                                     <button

@@ -9,16 +9,19 @@ import { storage, CreditCard, Transaction } from "@/lib/storage";
 export default function CreditCardsPage() {
     const { openModal } = useModal();
     const [cards, setCards] = useState<CreditCard[]>([]);
-    const [transactions, setTransactions] = useState<any[]>([]);
+    const [spends, setSpends] = useState<any[]>([]);
+    const [repayments, setRepayments] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const fetchData = () => {
             try {
                 const fetchedCards = storage.getCreditCards();
-                const fetchedTxs = storage.getTransactions();
+                const fetchedSpends = storage.getCreditSpends();
+                const fetchedRepays = storage.getCreditRepayments();
                 setCards(fetchedCards);
-                setTransactions(fetchedTxs);
+                setSpends(fetchedSpends);
+                setRepayments(fetchedRepays);
             } catch (e) {
                 console.error(e);
             } finally {
@@ -203,10 +206,11 @@ export default function CreditCardsPage() {
                                         Record Spend
                                     </button>
                                     <button
+                                        onClick={() => openModal("add-credit-repayment")}
                                         className="flex-1 h-12 rounded-2xl bg-blue-600 text-white text-sm font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/10 flex items-center justify-center gap-2 active:scale-95"
                                     >
                                         <ArrowRight className="w-4 h-4" />
-                                        Pay Overdue
+                                        Record Repayment
                                     </button>
                                 </div>
                             </motion.div>
@@ -233,7 +237,8 @@ export default function CreditCardsPage() {
 
                     <div className="divide-y divide-[var(--border-color)]">
                         {cards.map(card => {
-                            const cardTxs = transactions.filter(tx => tx.credit_card_id === card.id);
+                            const cardSpends = spends.filter(s => s.card_id === card.id);
+                            const cardRepays = repayments.filter(r => r.card_id === card.id);
                             return (
                                 <div key={card.id} className="py-4 first:pt-0 last:pb-0">
                                     <div className="flex items-center justify-between">
@@ -243,12 +248,11 @@ export default function CreditCardsPage() {
                                             </div>
                                             <div>
                                                 <div className="font-bold">{card.name}</div>
-                                                <div className="text-xs text-[var(--text-muted)]">{cardTxs.length} transactions in current cycle</div>
+                                                <div className="text-xs text-[var(--text-muted)]">
+                                                    {cardSpends.length} spends • {cardRepays.length} repayments
+                                                </div>
                                             </div>
                                         </div>
-                                        <button className="text-sm font-bold text-blue-500 hover:text-blue-600 px-4 py-1.5 rounded-lg hover:bg-blue-500/5 transition-all">
-                                            View Statement
-                                        </button>
                                     </div>
                                 </div>
                             );
