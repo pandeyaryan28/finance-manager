@@ -24,6 +24,7 @@ export default function NetWorthPage() {
         const calculateNetWorth = () => {
             const accounts = storage.getAccounts();
             const transactions = storage.getTransactions();
+            const creditCards = storage.getCreditCards();
 
             let assets = 0;
             let liabilities = 0;
@@ -42,8 +43,7 @@ export default function NetWorthPage() {
                 else liabilities += Math.abs(balance);
 
                 const icon = acc.type === 'Bank' ? <BankIcon className="w-4 h-4" /> :
-                    acc.type === 'Credit Card' ? <CreditCard className="w-4 h-4" /> :
-                        <Banknote className="w-4 h-4" />;
+                    <Banknote className="w-4 h-4" />;
 
                 dist.push({
                     name: acc.name,
@@ -51,6 +51,18 @@ export default function NetWorthPage() {
                     icon: icon,
                     color: balance >= 0 ? "text-emerald-500" : "text-red-500",
                     bg: balance >= 0 ? "bg-emerald-500/10" : "bg-red-500/10"
+                });
+            });
+
+            // Add Credit Cards to Liabilities
+            creditCards.forEach(card => {
+                liabilities += card.current_balance;
+                dist.push({
+                    name: card.name,
+                    amount: -card.current_balance,
+                    icon: <CreditCard className="w-4 h-4" />,
+                    color: "text-red-500",
+                    bg: "bg-red-500/10"
                 });
             });
 

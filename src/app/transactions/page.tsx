@@ -119,7 +119,9 @@ export default function TransactionsPage() {
                                         {(tx as any).category?.name || 'Uncategorized'}
                                     </span>
                                 </div>
-                                <div className="text-[var(--text-muted)]">{(tx as any).account?.name || 'Wallet'}</div>
+                                <div className="text-[var(--text-muted)]">
+                                    {(tx as any).creditCard?.name || (tx as any).account?.name || 'Wallet'}
+                                </div>
                                 <div className={`text-right font-bold text-base ${tx.type === 'expense' ? '' : 'text-emerald-500'}`}>
                                     {tx.type === 'expense' ? '-' : '+'}₹{Math.abs(tx.amount).toLocaleString()}
                                 </div>

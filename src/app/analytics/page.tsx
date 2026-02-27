@@ -12,7 +12,8 @@ import {
     ArrowDownRight,
     IndianRupee,
     ChevronRight,
-    Calendar
+    Calendar,
+    CreditCard
 } from "lucide-react";
 import {
     PieChart,
@@ -47,21 +48,29 @@ export default function AnalyticsPage() {
                 const transactions = storage.getTransactions();
                 const categories = storage.getCategories();
                 const accounts = storage.getAccounts();
+                const creditCards = storage.getCreditCards();
 
-                let incomeTotal = 0;
-                let expenseTotal = 0;
+                let liquidIncome = 0;
+                let liquidExpenses = 0;
+                let creditSpend = 0;
 
-                // Category-wise Breakdown (Expenses Only for Pie)
+                // Category-wise Breakdown (Everything)
                 const catMap: Record<string, number> = {};
                 transactions.forEach(t => {
                     if (t.is_pending) return;
+
                     if (t.type === 'expense') {
-                        expenseTotal += t.amount;
                         const cat = categories.find(c => c.id === t.category_id);
                         const catName = cat?.name || "Other";
                         catMap[catName] = (catMap[catName] || 0) + t.amount;
+                    }
+
+                    if (t.credit_card_id) {
+                        if (t.type === 'expense') creditSpend += t.amount;
+                        else creditSpend -= t.amount;
                     } else {
-                        incomeTotal += t.amount;
+                        if (t.type === 'income') liquidIncome += t.amount;
+                        else liquidExpenses += t.amount;
                     }
                 });
 
@@ -79,16 +88,24 @@ export default function AnalyticsPage() {
                             else balance -= t.amount;
                         }
                     });
-                    return { name: acc.name, value: balance };
+                    return { name: acc.name, value: balance, type: 'liquid' };
                 }).filter(a => Math.abs(a.value) > 0);
 
+                // Add Credit Cards to Distribution
+                const creditData = creditCards.map(card => ({
+                    name: card.name,
+                    value: -card.current_balance,
+                    type: 'credit'
+                })).filter(c => Math.abs(c.value) > 0);
+
                 setCategoryData(formattedCatData);
-                setAccountData(accData);
+                setAccountData([...accData, ...creditData]);
                 setSummary({
-                    totalIncome: incomeTotal,
-                    totalExpenses: expenseTotal,
-                    netBalance: incomeTotal - expenseTotal
-                });
+                    totalIncome: liquidIncome,
+                    totalExpenses: liquidExpenses,
+                    netBalance: liquidIncome - liquidExpenses,
+                    creditDebt: creditCards.reduce((acc, c) => acc + c.current_balance, 0)
+                } as any);
             } catch (e) {
                 console.error(e);
             } finally {
@@ -139,7 +156,7 @@ export default function AnalyticsPage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <motion.div variants={itemVariants} className="card p-5 border-l-4 border-l-blue-500">
                     <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-medium text-[var(--text-muted)]">Net Savings</span>
+                        <span className="text-sm font-medium text-[var(--text-muted)]">Net Cash Savings</span>
                         <div className="p-1.5 bg-blue-500/10 text-blue-500 rounded-lg">
                             <Wallet className="w-4 h-4" />
                         </div>
@@ -148,12 +165,12 @@ export default function AnalyticsPage() {
                         <IndianRupee className="w-5 h-5 mr-0.5" />
                         {summary.netBalance.toLocaleString()}
                     </div>
-                    <div className="text-[10px] text-[var(--text-muted)] mt-1 font-bold">TOTAL ACCUMULATED FUNDS</div>
+                    <div className="text-[10px] text-[var(--text-muted)] mt-1 font-bold">TOTAL CASH BALANCE</div>
                 </motion.div>
 
                 <motion.div variants={itemVariants} className="card p-5 border-l-4 border-l-emerald-500">
                     <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-medium text-[var(--text-muted)]">Total Inflow</span>
+                        <span className="text-sm font-medium text-[var(--text-muted)]">Total Cash Inflow</span>
                         <div className="p-1.5 bg-emerald-500/10 text-emerald-500 rounded-lg">
                             <TrendingUp className="w-4 h-4" />
                         </div>
@@ -162,21 +179,21 @@ export default function AnalyticsPage() {
                         <IndianRupee className="w-5 h-5 mr-0.5" />
                         {summary.totalIncome.toLocaleString()}
                     </div>
-                    <div className="text-[10px] text-[var(--text-muted)] mt-1 font-bold uppercase">All Income</div>
+                    <div className="text-[10px] text-[var(--text-muted)] mt-1 font-bold uppercase">Income to accounts</div>
                 </motion.div>
 
                 <motion.div variants={itemVariants} className="card p-5 border-l-4 border-l-red-500">
                     <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-medium text-[var(--text-muted)]">Total Outflow</span>
+                        <span className="text-sm font-medium text-[var(--text-muted)]">Total Credit Debt</span>
                         <div className="p-1.5 bg-red-500/10 text-red-500 rounded-lg">
-                            <TrendingDown className="w-4 h-4" />
+                            <CreditCard className="w-4 h-4" />
                         </div>
                     </div>
                     <div className="text-2xl font-bold text-red-500 flex items-center">
                         <IndianRupee className="w-5 h-5 mr-0.5" />
-                        {summary.totalExpenses.toLocaleString()}
+                        {(summary as any).creditDebt?.toLocaleString() || '0'}
                     </div>
-                    <div className="text-[10px] text-[var(--text-muted)] mt-1 font-bold uppercase">All Expenses</div>
+                    <div className="text-[10px] text-[var(--text-muted)] mt-1 font-bold uppercase">Outstanding Dues</div>
                 </motion.div>
             </div>
 

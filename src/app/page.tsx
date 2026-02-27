@@ -31,7 +31,9 @@ export default function Dashboard() {
     savingsRate: 0,
     transactions: [] as (Transaction & { category?: any, account?: any })[],
     accounts: [] as any[],
-    chartData: [] as any[]
+    chartData: [] as any[],
+    creditDebt: 0,
+    creditLimit: 0
   });
   const [loading, setLoading] = useState(true);
 
@@ -41,12 +43,19 @@ export default function Dashboard() {
         const transactions = storage.getTransactions();
         const accounts = storage.getAccounts();
 
-        let income = 0;
-        let expenses = 0;
+        let liquidIncome = 0;
+        let liquidExpenses = 0;
+        let creditSpend = 0;
+
         transactions.forEach((t) => {
           if (t.is_pending) return;
-          if (t.type === 'income') income += t.amount;
-          else expenses += t.amount;
+          if (t.credit_card_id) {
+            if (t.type === 'expense') creditSpend += t.amount;
+            else creditSpend -= t.amount;
+          } else {
+            if (t.type === 'income') liquidIncome += t.amount;
+            else liquidExpenses += t.amount;
+          }
         });
 
         const accountsWithBalance = accounts.map((acc) => {
@@ -59,6 +68,11 @@ export default function Dashboard() {
           });
           return { ...acc, balance: accBalance };
         });
+
+        // Fetch Credit Cards for summary
+        const creditCards = storage.getCreditCards();
+        const totalCreditDebt = creditCards.reduce((acc, c) => acc + c.current_balance, 0);
+        const totalCreditLimit = creditCards.reduce((acc, c) => acc + c.limit, 0);
 
         // Group transactions by date for the last 7 days
         const endDate = startOfDay(new Date());
@@ -84,17 +98,19 @@ export default function Dashboard() {
           };
         });
 
-        const balance = income - expenses;
-        const savingsRate = income > 0 ? ((income - expenses) / income) * 100 : 0;
+        const netLiquidBalance = liquidIncome - liquidExpenses;
+        const savingsRate = liquidIncome > 0 ? ((liquidIncome - liquidExpenses) / liquidIncome) * 100 : 0;
 
         setStats({
-          balance,
-          income,
-          expenses,
+          balance: netLiquidBalance,
+          income: liquidIncome,
+          expenses: liquidExpenses,
           savingsRate: Math.max(0, savingsRate),
           transactions: transactions.sort((a, b) => b.date.localeCompare(a.date)).slice(0, 5),
           accounts: accountsWithBalance,
-          chartData: chartData
+          chartData: chartData,
+          creditDebt: totalCreditDebt,
+          creditLimit: totalCreditLimit
         });
       } catch (e) {
         console.error(e);
@@ -163,12 +179,31 @@ export default function Dashboard() {
             </div>
           </motion.div>
         ))}
+        {/* Credit Cards Summary on Dashboard */}
+        {stats.creditDebt > 0 && (
+          <motion.div
+            variants={itemVariants}
+            className="p-4 rounded-2xl bg-slate-950 border border-red-500/20 group hover:border-red-500/50 transition-all shadow-sm"
+          >
+            <div className="flex items-center justify-between mb-1">
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 rounded-lg bg-red-500/10 text-red-500">
+                  <CreditCard className="w-4 h-4" />
+                </div>
+                <span className="text-xs font-semibold text-red-400 uppercase tracking-wider">Credit Debt</span>
+              </div>
+            </div>
+            <div className="text-xl font-bold text-red-500">
+              ₹{stats.creditDebt.toLocaleString()}
+            </div>
+          </motion.div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <motion.div variants={itemVariants} className="card p-5 group flex flex-col justify-between h-32">
+        <motion.div variants={itemVariants} className="card p-5 group flex flex-col justify-between h-32 border-l-4 border-l-blue-500">
           <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-[var(--text-muted)]">Net Balance</span>
+            <span className="text-sm font-medium text-[var(--text-muted)]">Liquid Cash</span>
             <span className="p-2 bg-blue-500/10 text-blue-500 rounded-full">
               <Wallet className="h-4 w-4" />
             </span>
@@ -178,12 +213,35 @@ export default function Dashboard() {
               <IndianRupee className="h-5 w-5 mr-1" />
               {stats.balance.toLocaleString()}
             </div>
+            <p className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider mt-1">Available in accounts</p>
           </div>
         </motion.div>
 
-        <motion.div variants={itemVariants} className="card p-5 group flex flex-col justify-between h-32">
+        <motion.div variants={itemVariants} className="card p-5 group flex flex-col justify-between h-32 border-l-4 border-l-red-500">
           <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-[var(--text-muted)]">Total Income</span>
+            <span className="text-sm font-medium text-[var(--text-muted)]">Credit Utilization</span>
+            <span className="p-2 bg-red-500/10 text-red-500 rounded-full">
+              <Activity className="h-4 w-4" />
+            </span>
+          </div>
+          <div>
+            <div className="text-2xl font-bold tracking-tight mt-1 text-red-500">
+              ₹{stats.creditDebt.toLocaleString()}
+            </div>
+            <div className="w-full bg-[var(--bg-color)] rounded-full h-1 mt-2 overflow-hidden">
+              <motion.div
+                className="bg-red-500 h-1 rounded-full"
+                initial={{ width: 0 }}
+                animate={{ width: `${stats.creditLimit > 0 ? (stats.creditDebt / stats.creditLimit) * 100 : 0}%` }}
+                transition={{ duration: 1, ease: "easeOut" }}
+              />
+            </div>
+          </div>
+        </motion.div>
+
+        <motion.div variants={itemVariants} className="card p-5 group flex flex-col justify-between h-32 border-l-4 border-l-emerald-500">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium text-[var(--text-muted)]">Cash Income</span>
             <span className="p-2 bg-emerald-500/10 text-emerald-500 rounded-full">
               <ArrowUpRight className="h-4 w-4" />
             </span>
@@ -196,37 +254,17 @@ export default function Dashboard() {
           </div>
         </motion.div>
 
-        <motion.div variants={itemVariants} className="card p-5 group flex flex-col justify-between h-32">
+        <motion.div variants={itemVariants} className="card p-5 group flex flex-col justify-between h-32 border-l-4 border-l-amber-500">
           <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-[var(--text-muted)]">Total Expenses</span>
-            <span className="p-2 bg-red-500/10 text-red-500 rounded-full">
+            <span className="text-sm font-medium text-[var(--text-muted)]">Cash Expenses</span>
+            <span className="p-2 bg-amber-500/10 text-amber-500 rounded-full">
               <ArrowDownRight className="h-4 w-4" />
             </span>
           </div>
           <div>
-            <div className="text-2xl font-bold tracking-tight mt-1 flex items-center text-red-500">
+            <div className="text-2xl font-bold tracking-tight mt-1 flex items-center text-amber-500">
               <IndianRupee className="h-5 w-5 mr-1" />
               {stats.expenses.toLocaleString()}
-            </div>
-          </div>
-        </motion.div>
-
-        <motion.div variants={itemVariants} className="card p-5 group flex flex-col justify-between h-32">
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-[var(--text-muted)]">Savings Rate</span>
-            <span className="p-2 bg-purple-500/10 text-purple-500 rounded-full">
-              <Target className="h-4 w-4" />
-            </span>
-          </div>
-          <div>
-            <div className="text-2xl font-bold tracking-tight mt-1">{stats.savingsRate.toFixed(1)}%</div>
-            <div className="w-full bg-[var(--bg-color)] rounded-full h-1 mt-2 overflow-hidden">
-              <motion.div
-                className="bg-purple-500 h-1 rounded-full"
-                initial={{ width: 0 }}
-                animate={{ width: `${stats.savingsRate}%` }}
-                transition={{ duration: 1, delay: 0.5, ease: "easeOut" }}
-              />
             </div>
           </div>
         </motion.div>

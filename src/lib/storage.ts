@@ -127,13 +127,27 @@ export const storage = {
 
     addTransaction: (tx: Omit<Transaction, 'id'>) => {
         const txs = JSON.parse(localStorage.getItem(STORAGE_KEYS.TRANSACTIONS) || '[]');
-        const newTx = { ...tx, id: Math.random().toString(36).substr(2, 9) };
+        const id = Math.random().toString(36).substr(2, 9);
+        const newTx = { ...tx, id };
         txs.push(newTx);
         localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(txs));
 
         // If it's a credit card transaction, update card balance
         if (tx.credit_card_id) {
-            storage.updateCardBalance(tx.credit_card_id, tx.amount, tx.type === 'expense');
+            console.log("Updating card balance for card:", tx.credit_card_id);
+            const cards = JSON.parse(localStorage.getItem(STORAGE_KEYS.CREDIT_CARDS) || '[]');
+            const cardIndex = cards.findIndex((c: any) => c.id === tx.credit_card_id);
+            if (cardIndex !== -1) {
+                if (tx.type === 'expense') {
+                    cards[cardIndex].current_balance += tx.amount;
+                } else {
+                    cards[cardIndex].current_balance -= tx.amount;
+                }
+                localStorage.setItem(STORAGE_KEYS.CREDIT_CARDS, JSON.stringify(cards));
+                console.log("New balance for card:", cards[cardIndex].current_balance);
+            } else {
+                console.warn("Card not found for balance update:", tx.credit_card_id);
+            }
         }
 
         return newTx;
