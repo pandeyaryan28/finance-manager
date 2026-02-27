@@ -56,16 +56,22 @@ export default function MotionProvider({ children }: { children: React.ReactNode
 
         const moveCursor = (e: MouseEvent) => {
             const { clientX, clientY, target } = e;
-            xTo(clientX);
-            yTo(clientY);
-            xFollowerTo(clientX);
-            yFollowerTo(clientY);
+
+            // Offset for centering the dots/rings
+            xTo(clientX - 3);
+            yTo(clientY - 3);
+            xFollowerTo(clientX - 16);
+            yFollowerTo(clientY - 16);
 
             // Hover effect for interactive elements
-            if ((target as HTMLElement).closest('button, a, .glass')) {
-                gsap.to(followerRef.current, { width: 80, height: 80, borderColor: "white", duration: 0.3 });
+            const isHovering = (target as HTMLElement).closest('button, a, .glass, .card');
+            if (isHovering) {
+                followerRef.current?.classList.add('hovering');
+                // Adjust follower offset for expanded size (60px / 2 = 30)
+                xFollowerTo(clientX - 30);
+                yFollowerTo(clientY - 30);
             } else {
-                gsap.to(followerRef.current, { width: 40, height: 40, borderColor: "rgba(255,255,255,0.2)", duration: 0.3 });
+                followerRef.current?.classList.remove('hovering');
             }
         };
 
