@@ -8,6 +8,10 @@ import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianG
 import { useModal } from "@/lib/ModalContext";
 import { storage, Transaction, Account } from "@/lib/storage";
 import { format, parseISO, startOfDay, eachDayOfInterval, subDays } from "date-fns";
+import HeroVisual from "@/components/visuals/HeroVisual";
+import StorySection from "@/components/landing/StorySection";
+import MorphCard from "@/components/motion/MorphCard";
+import Magnetic from "@/components/motion/Magnetic";
 
 const containerVariants: Variants = {
   hidden: { opacity: 0 },
@@ -18,8 +22,8 @@ const containerVariants: Variants = {
 };
 
 const itemVariants: Variants = {
-  hidden: { opacity: 0, y: 15 },
-  show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 350, damping: 25 } },
+  hidden: { opacity: 0, scale: 0.9, y: 20 },
+  show: { opacity: 1, scale: 1, y: 0, transition: { type: "spring", stiffness: 260, damping: 20 } },
 };
 
 export default function Dashboard() {
@@ -73,7 +77,6 @@ export default function Dashboard() {
         const totalCreditDebt = creditCards.reduce((acc, c) => acc + c.current_balance, 0);
         const totalCreditLimit = creditCards.reduce((acc, c) => acc + c.limit, 0);
 
-        // Group transactions by date for the last 7 days
         const endDate = startOfDay(new Date());
         const startDate = subDays(endDate, 6);
         const dateInterval = eachDayOfInterval({ start: startDate, end: endDate });
@@ -135,212 +138,123 @@ export default function Dashboard() {
   };
 
   return (
-    <motion.div
-      variants={containerVariants}
-      initial="hidden"
-      animate="show"
-      className="space-y-4"
-    >
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
-          <p className="text-sm text-[var(--text-muted)]">Live monitoring & Account tracking.</p>
-        </div>
-        <div className="flex gap-2">
-          <button
-            onClick={() => openModal("add-category")}
-            className="flex h-9 items-center justify-center gap-2 rounded-xl border border-[var(--border-color)] bg-[var(--card-color)] px-4 text-sm font-medium hover:bg-[var(--bg-color)] transition-all shadow-sm"
-          >
-            <Plus className="h-4 w-4" />
-            <span>Category</span>
-          </button>
-          <button
-            onClick={() => openModal("add-account")}
-            className="flex h-9 items-center justify-center gap-2 rounded-xl border border-[var(--border-color)] bg-[var(--card-color)] px-4 text-sm font-medium hover:bg-[var(--bg-color)] transition-all shadow-sm"
-          >
-            <Plus className="h-4 w-4" />
-            <span>Account</span>
-          </button>
-        </div>
-      </div>
+    <div className="space-y-32 pb-32">
+      {/* Hero Section */}
+      <section className="relative h-[90vh] flex flex-col items-center justify-center text-center">
+        <HeroVisual />
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5, duration: 1 }}
+          className="z-10"
+        >
+          <h1 className="text-8xl font-black tracking-tighter text-luxury mb-6">
+            CLARITY
+          </h1>
+          <p className="text-xl text-dim max-w-lg mx-auto mb-10">
+            A spatial environment for hyper-precision financial orchestration.
+          </p>
+          <div className="flex gap-4 justify-center">
+            <Magnetic>
+              <button
+                onClick={() => openModal("add-expense")}
+                className="px-10 py-4 bg-white text-black font-bold rounded-full hover:scale-105 transition-transform"
+              >
+                Pulse Transaction
+              </button>
+            </Magnetic>
+            <Magnetic>
+              <button
+                onClick={() => openModal("add-income")}
+                className="px-10 py-4 glass text-white font-bold rounded-full hover:scale-105 transition-transform"
+              >
+                Infuse Capital
+              </button>
+            </Magnetic>
+          </div>
+        </motion.div>
+      </section>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {stats.accounts.map((acc) => (
-          <motion.div
-            key={acc.id}
-            variants={itemVariants}
-            className="p-4 rounded-2xl bg-[var(--card-color)] border border-[var(--border-color)] group hover:border-blue-500/50 transition-all shadow-sm"
-          >
-            <div className="flex items-center justify-between mb-1">
-              <div className="flex items-center gap-2">
-                <div className="p-1.5 rounded-lg bg-[var(--bg-color)] text-[var(--text-muted)]">
+      {/* Main Dashboard Grid */}
+      <motion.div
+        variants={containerVariants}
+        initial="hidden"
+        whileInView="show"
+        viewport={{ once: true }}
+        className="space-y-8"
+      >
+        <div className="flex flex-col sm:flex-row items-end justify-between gap-4">
+          <div>
+            <h2 className="text-4xl font-bold tracking-tight text-luxury">Operational Overview</h2>
+            <p className="text-dim">Real-time telemetry of your financial assets.</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {stats.accounts.map((acc) => (
+            <motion.div
+              key={acc.id}
+              variants={itemVariants}
+              className="glass p-6 group hover:translate-y-[-4px] transition-all"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-2 rounded-xl bg-white/5 text-white/50">
                   {getAccountIcon(acc.type)}
                 </div>
-                <span className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">{acc.name}</span>
+                <span className="text-[10px] font-bold text-dim uppercase tracking-widest">{acc.name}</span>
               </div>
-            </div>
-            <div className={`text-xl font-bold ${acc.balance < 0 ? 'text-red-500' : 'text-blue-500'}`}>
-              ₹{acc.balance.toLocaleString()}
+              <div className={`text-2xl font-bold ${acc.balance < 0 ? 'text-red-400' : 'text-white'}`}>
+                ₹{acc.balance.toLocaleString()}
+              </div>
+            </motion.div>
+          ))}
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <motion.div variants={itemVariants} className="glass p-8 lg:col-span-2 flex flex-col">
+            <h3 className="font-bold text-xl mb-8">Liquidity Vector</h3>
+            <div className="h-80 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={stats.chartData}>
+                  <defs>
+                    <linearGradient id="colorIncome" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#ffffff" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="#ffffff" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <Tooltip
+                    contentStyle={{ backgroundColor: 'rgba(0,0,0,0.8)', borderColor: 'rgba(255,255,255,0.1)', borderRadius: '1rem', backdropFilter: 'blur(10px)' }}
+                  />
+                  <Area type="monotone" dataKey="income" stroke="#ffffff" strokeWidth={4} fillOpacity={1} fill="url(#colorIncome)" />
+                </AreaChart>
+              </ResponsiveContainer>
             </div>
           </motion.div>
-        ))}
-        {/* Credit Cards Summary on Dashboard */}
-        {stats.creditDebt > 0 && (
-          <motion.div
-            variants={itemVariants}
-            className="p-4 rounded-2xl bg-slate-950 border border-red-500/20 group hover:border-red-500/50 transition-all shadow-sm"
-          >
-            <div className="flex items-center justify-between mb-1">
-              <div className="flex items-center gap-2">
-                <div className="p-1.5 rounded-lg bg-red-500/10 text-red-500">
-                  <CreditCard className="w-4 h-4" />
-                </div>
-                <span className="text-xs font-semibold text-red-400 uppercase tracking-wider">Credit Debt</span>
-              </div>
-            </div>
-            <div className="text-xl font-bold text-red-500">
-              ₹{stats.creditDebt.toLocaleString()}
-            </div>
+
+          <motion.div variants={itemVariants} className="space-y-6">
+            <MorphCard />
           </motion.div>
-        )}
-      </div>
+        </div>
+      </motion.div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <motion.div variants={itemVariants} className="card p-5 group flex flex-col justify-between h-32 border-l-4 border-l-blue-500">
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-[var(--text-muted)]">Liquid Cash</span>
-            <span className="p-2 bg-blue-500/10 text-blue-500 rounded-full">
-              <Wallet className="h-4 w-4" />
-            </span>
-          </div>
-          <div>
-            <div className="text-2xl font-bold tracking-tight mt-1 flex items-center">
-              <IndianRupee className="h-5 w-5 mr-1" />
-              {stats.balance.toLocaleString()}
-            </div>
-            <p className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider mt-1">Available in accounts</p>
-          </div>
-        </motion.div>
+      {/* Storytelling Section */}
+      <StorySection />
 
-        <motion.div variants={itemVariants} className="card p-5 group flex flex-col justify-between h-32 border-l-4 border-l-red-500">
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-[var(--text-muted)]">Credit Utilization</span>
-            <span className="p-2 bg-red-500/10 text-red-500 rounded-full">
-              <Activity className="h-4 w-4" />
-            </span>
-          </div>
-          <div>
-            <div className="text-2xl font-bold tracking-tight mt-1 text-red-500">
-              ₹{stats.creditDebt.toLocaleString()}
-            </div>
-            <div className="w-full bg-[var(--bg-color)] rounded-full h-1 mt-2 overflow-hidden">
-              <motion.div
-                className="bg-red-500 h-1 rounded-full"
-                initial={{ width: 0 }}
-                animate={{ width: `${stats.creditLimit > 0 ? (stats.creditDebt / stats.creditLimit) * 100 : 0}%` }}
-                transition={{ duration: 1, ease: "easeOut" }}
-              />
-            </div>
-          </div>
+      {/* Footer / CTA */}
+      <section className="text-center py-32">
+        <motion.div
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          className="max-w-4xl mx-auto"
+        >
+          <h2 className="text-6xl font-black mb-8">Architect Your Future.</h2>
+          <Magnetic>
+            <Link href="/analytics" className="px-12 py-5 bg-white text-black text-xl font-bold rounded-full inline-block">
+              Open Strategy Engine
+            </Link>
+          </Magnetic>
         </motion.div>
-
-        <motion.div variants={itemVariants} className="card p-5 group flex flex-col justify-between h-32 border-l-4 border-l-emerald-500">
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-[var(--text-muted)]">Cash Income</span>
-            <span className="p-2 bg-emerald-500/10 text-emerald-500 rounded-full">
-              <ArrowUpRight className="h-4 w-4" />
-            </span>
-          </div>
-          <div>
-            <div className="text-2xl font-bold tracking-tight mt-1 flex items-center text-emerald-500">
-              <IndianRupee className="h-5 w-5 mr-1" />
-              {stats.income.toLocaleString()}
-            </div>
-          </div>
-        </motion.div>
-
-        <motion.div variants={itemVariants} className="card p-5 group flex flex-col justify-between h-32 border-l-4 border-l-amber-500">
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-[var(--text-muted)]">Cash Expenses</span>
-            <span className="p-2 bg-amber-500/10 text-amber-500 rounded-full">
-              <ArrowDownRight className="h-4 w-4" />
-            </span>
-          </div>
-          <div>
-            <div className="text-2xl font-bold tracking-tight mt-1 flex items-center text-amber-500">
-              <IndianRupee className="h-5 w-5 mr-1" />
-              {stats.expenses.toLocaleString()}
-            </div>
-          </div>
-        </motion.div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <motion.div variants={itemVariants} className="card p-6 lg:col-span-2 flex flex-col">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="font-semibold text-lg">Cash Flow (Last 7 Days)</h3>
-          </div>
-          <div className="h-72 w-full flex-1">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={stats.chartData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
-                <XAxis dataKey="name" stroke="var(--text-muted)" fontSize={12} tickLine={false} axisLine={false} />
-                <YAxis stroke="var(--text-muted)" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `₹${val}`} />
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border-color)" />
-                <Tooltip
-                  contentStyle={{ backgroundColor: 'var(--card-color)', borderColor: 'var(--border-color)', borderRadius: '0.75rem', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
-                  itemStyle={{ color: 'var(--text-color)' }}
-                />
-                <Area type="monotone" dataKey="income" stroke="#3b82f6" strokeWidth={3} fillOpacity={0.1} fill="#3b82f6" />
-                <Area type="monotone" dataKey="expense" stroke="#ef4444" strokeWidth={3} fillOpacity={0.1} fill="#ef4444" />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </motion.div>
-
-        <motion.div variants={itemVariants} className="card p-6 flex flex-col">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="font-semibold text-lg">Recent Ledger</h3>
-            <Link href="/transactions" className="text-sm text-blue-500 font-medium hover:text-blue-600">View All</Link>
-          </div>
-          <div className="space-y-4 flex-1 overflow-y-auto pr-2">
-            {stats.transactions.length === 0 ? (
-              <div className="h-full flex flex-col items-center justify-center text-center p-4">
-                <Activity className="w-12 h-12 text-[var(--text-muted)] opacity-20 mb-2" />
-                <p className="text-sm text-[var(--text-muted)]">No transactions yet.</p>
-              </div>
-            ) : (
-              stats.transactions.map((tx: any, idx) => (
-                <motion.div
-                  key={tx.id}
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.1 + idx * 0.05 }}
-                  className="flex items-center justify-between p-3 rounded-2xl hover:bg-[var(--bg-color)] transition-colors cursor-pointer group"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className={`p-2.5 rounded-xl bg-opacity-10 dark:bg-opacity-20 flex-shrink-0
-                      ${tx.type === 'expense' ? 'bg-red-500 text-red-500' : 'bg-emerald-500 text-emerald-500'}
-                      ${tx.is_pending ? 'opacity-50 grayscale' : ''}
-                    `}>
-                      {tx.type === 'expense' ? <ArrowDownRight className="h-4 w-4" /> : <ArrowUpRight className="h-4 w-4" />}
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <div className="font-medium text-sm group-hover:text-blue-500 transition-colors line-clamp-1">{tx.title}</div>
-                        {tx.is_pending && <span className="text-[9px] px-1 py-0.5 bg-amber-500/10 text-amber-500 rounded font-bold uppercase tracking-tighter">PENDING</span>}
-                      </div>
-                      <div className="text-xs text-[var(--text-muted)] mt-0.5">{(tx as any).category?.name} • {(tx as any).account?.name}</div>
-                    </div>
-                  </div>
-                  <div className={`font-semibold text-sm whitespace-nowrap ${tx.type === 'expense' ? '' : 'text-emerald-500'}`}>
-                    {tx.type === 'expense' ? '-' : '+'}₹{Math.abs(tx.amount).toLocaleString()}
-                  </div>
-                </motion.div>
-              ))
-            )}
-          </div>
-        </motion.div>
-      </div>
-    </motion.div>
+      </section>
+    </div>
   );
 }

@@ -10,10 +10,13 @@ import { CreditCardModal } from "@/components/ui/CreditCardModal";
 import CreditCardPaymentModal from "@/components/ui/CreditCardPaymentModal";
 import { LendingModal } from "@/components/ui/LendingModal";
 import { StorageInitializer } from "@/components/StorageInitializer";
+import MotionProvider from "@/components/motion/MotionProvider";
+import GradientMesh from "@/components/visuals/GradientMesh";
+import HeroVisual from "@/components/visuals/HeroVisual";
 
 export const metadata: Metadata = {
-  title: "Clarity | Personal Finance",
-  description: "Modern personal finance manager tailored for clarity and speed.",
+  title: "Clarity | Cinematic Finance",
+  description: "Experience financial management in a spatial, cinematic environment.",
 };
 
 export default function RootLayout({
@@ -23,27 +26,31 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="dark">
-      <body className="font-sans min-h-screen bg-[var(--bg-color)] text-[var(--text-color)] antialiased selection:bg-blue-500/30 overflow-hidden">
+      <body className="font-sans min-h-screen bg-[#050505] text-white antialiased hide-scrollbar">
         <StorageInitializer />
-        <ModalProvider>
-          <div className="flex h-screen overflow-hidden">
-            <Sidebar />
-            <div className="relative flex flex-1 flex-col overflow-y-auto overflow-x-hidden sm:ml-64 bg-[var(--bg-color)] transition-all">
-              <Header />
-              <main className="flex-1 w-full max-w-7xl mx-auto p-4 sm:p-6 md:p-8">
-                {children}
-              </main>
+        <MotionProvider>
+          <ModalProvider>
+            <GradientMesh />
+            <div className="flex h-screen overflow-hidden relative z-10">
+              <Sidebar />
+              <div className="relative flex flex-1 flex-col overflow-y-auto overflow-x-hidden sm:ml-64 transition-all">
+                <Header />
+                <main className="flex-1 w-full max-w-7xl mx-auto p-4 sm:p-6 md:p-8">
+                  {children}
+                </main>
+              </div>
             </div>
-          </div>
-          <TransactionModals />
-          <CreditSpendModal />
-          <CategoryModal />
-          <AccountModal />
-          <CreditCardModal />
-          <CreditCardPaymentModal />
-          <LendingModal />
-        </ModalProvider>
+            <TransactionModals />
+            <CreditSpendModal />
+            <CategoryModal />
+            <AccountModal />
+            <CreditCardModal />
+            <CreditCardPaymentModal />
+            <LendingModal />
+          </ModalProvider>
+        </MotionProvider>
       </body>
     </html>
   );
 }
+

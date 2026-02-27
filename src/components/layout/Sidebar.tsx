@@ -32,7 +32,7 @@ export function Sidebar() {
     const pathname = usePathname();
 
     return (
-        <aside className="fixed left-0 top-0 z-40 h-screen w-64 border-r border-[var(--border-color)] bg-[var(--card-color)] text-[var(--text-color)] transition-transform sm:translate-x-0 hidden sm:flex flex-col">
+        <aside className="fixed left-0 top-0 z-40 h-screen w-64 glass text-white transition-transform sm:translate-x-0 hidden sm:flex flex-col border-r-0">
             <div className="flex h-16 items-center px-6 border-b border-[var(--border-color)]">
                 <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-500 to-indigo-600">
                     Clarity

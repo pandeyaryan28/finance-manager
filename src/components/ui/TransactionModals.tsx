@@ -84,10 +84,11 @@ export function TransactionModals() {
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
             <motion.div
-                initial={{ opacity: 0, scale: 0.9, y: 20 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                className="card w-full max-w-lg bg-[var(--card-color)] shadow-2xl overflow-hidden relative"
+                initial={{ opacity: 0, scale: 0.8, rotateX: 20 }}
+                animate={{ opacity: 1, scale: 1, rotateX: 0 }}
+                exit={{ opacity: 0, scale: 0.8, rotateX: 20 }}
+                transition={{ type: "spring", stiffness: 260, damping: 20 }}
+                className="glass w-full max-w-lg shadow-2xl overflow-hidden relative rounded-3xl"
             >
                 <div className={`p-6 border-b border-[var(--border-color)] flex items-center justify-between`}>
                     <div>
@@ -264,10 +265,11 @@ export function CreditSpendModal() {
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
             <motion.div
-                initial={{ opacity: 0, scale: 0.9, y: 20 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                className="card w-full max-w-lg bg-[var(--card-color)] shadow-2xl overflow-hidden relative"
+                initial={{ opacity: 0, scale: 0.8, rotateX: -20 }}
+                animate={{ opacity: 1, scale: 1, rotateX: 0 }}
+                exit={{ opacity: 0, scale: 0.8, rotateX: -20 }}
+                transition={{ type: "spring", stiffness: 260, damping: 20 }}
+                className="glass w-full max-w-lg shadow-2xl overflow-hidden relative rounded-3xl"
             >
                 <div className="p-6 border-b border-[var(--border-color)] flex items-center justify-between">
                     <div>
