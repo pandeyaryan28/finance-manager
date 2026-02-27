@@ -159,46 +159,46 @@ export default function AnalyticsPage() {
 
             {/* Top Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <motion.div variants={itemVariants} className="card p-5 border-l-4 border-l-blue-500">
+                <motion.div variants={itemVariants} className="glass p-6 rounded-3xl border-l-4 border-l-blue-500 shadow-2xl">
                     <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-medium text-[var(--text-muted)]">Net Cash Savings</span>
-                        <div className="p-1.5 bg-blue-500/10 text-blue-500 rounded-lg">
-                            <Wallet className="w-4 h-4" />
+                        <span className="text-sm font-bold text-white/70">Net Cash Savings</span>
+                        <div className="p-2 bg-blue-500/20 text-blue-400 rounded-xl">
+                            <Wallet className="w-5 h-5" />
                         </div>
                     </div>
-                    <div className="text-2xl font-bold flex items-center">
-                        <IndianRupee className="w-5 h-5 mr-0.5" />
+                    <div className="text-3xl font-black text-white flex items-center">
+                        <IndianRupee className="w-6 h-6 mr-1" />
                         {summary.netBalance.toLocaleString()}
                     </div>
-                    <div className="text-[10px] text-[var(--text-muted)] mt-1 font-bold">TOTAL CASH BALANCE</div>
+                    <div className="text-[10px] text-white/40 mt-2 font-black tracking-widest uppercase">Total Liquid Capital</div>
                 </motion.div>
 
-                <motion.div variants={itemVariants} className="card p-5 border-l-4 border-l-emerald-500">
+                <motion.div variants={itemVariants} className="glass p-6 rounded-3xl border-l-4 border-l-emerald-500 shadow-2xl">
                     <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-medium text-[var(--text-muted)]">Total Cash Inflow</span>
-                        <div className="p-1.5 bg-emerald-500/10 text-emerald-500 rounded-lg">
-                            <TrendingUp className="w-4 h-4" />
+                        <span className="text-sm font-bold text-white/70">Total Cash Inflow</span>
+                        <div className="p-2 bg-emerald-500/20 text-emerald-400 rounded-xl">
+                            <TrendingUp className="w-5 h-5" />
                         </div>
                     </div>
-                    <div className="text-2xl font-bold text-emerald-500 flex items-center">
-                        <IndianRupee className="w-5 h-5 mr-0.5" />
+                    <div className="text-3xl font-black text-emerald-400 flex items-center">
+                        <IndianRupee className="w-6 h-6 mr-1" />
                         {summary.totalIncome.toLocaleString()}
                     </div>
-                    <div className="text-[10px] text-[var(--text-muted)] mt-1 font-bold uppercase">Income to accounts</div>
+                    <div className="text-[10px] text-white/40 mt-2 font-black tracking-widest uppercase">Income Velocity</div>
                 </motion.div>
 
-                <motion.div variants={itemVariants} className="card p-5 border-l-4 border-l-red-500">
+                <motion.div variants={itemVariants} className="glass p-6 rounded-3xl border-l-4 border-l-red-500 shadow-2xl">
                     <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-medium text-[var(--text-muted)]">Total Credit Debt</span>
-                        <div className="p-1.5 bg-red-500/10 text-red-500 rounded-lg">
-                            <CreditCard className="w-4 h-4" />
+                        <span className="text-sm font-bold text-white/70">Total Credit Debt</span>
+                        <div className="p-2 bg-red-500/20 text-red-400 rounded-xl">
+                            <CreditCard className="w-5 h-5" />
                         </div>
                     </div>
-                    <div className="text-2xl font-bold text-red-500 flex items-center">
-                        <IndianRupee className="w-5 h-5 mr-0.5" />
+                    <div className="text-3xl font-black text-red-500 flex items-center">
+                        <IndianRupee className="w-6 h-6 mr-1" />
                         {(summary as any).creditDebt?.toLocaleString() || '0'}
                     </div>
-                    <div className="text-[10px] text-[var(--text-muted)] mt-1 font-bold uppercase">Outstanding Dues</div>
+                    <div className="text-[10px] text-white/40 mt-2 font-black tracking-widest uppercase">Liability Burden</div>
                 </motion.div>
             </div>
 
@@ -255,26 +255,27 @@ export default function AnalyticsPage() {
                     <div className="flex-1 w-full">
                         {accountData.length > 0 ? (
                             <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={accountData} layout="vertical" margin={{ left: 30, right: 30 }}>
-                                    <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="var(--border-color)" />
+                                <BarChart data={accountData} layout="vertical" margin={{ left: 40, right: 40, top: 20, bottom: 20 }}>
+                                    <CartesianGrid strokeDasharray="3 3" horizontal={false} vertical={true} stroke="rgba(255,255,255,0.05)" />
                                     <XAxis type="number" hide />
                                     <YAxis
                                         dataKey="name"
                                         type="category"
                                         axisLine={false}
                                         tickLine={false}
-                                        fontSize={12}
-                                        stroke="var(--text-muted)"
-                                        width={80}
+                                        fontSize={11}
+                                        stroke="#ffffff"
+                                        width={100}
+                                        tick={{ fill: '#ffffff', fontWeight: 'bold', opacity: 0.9 }}
                                     />
                                     <Tooltip
-                                        cursor={{ fill: 'var(--bg-color)', opacity: 0.4 }}
-                                        contentStyle={{ backgroundColor: 'black', borderColor: 'rgba(255,255,255,0.1)', borderRadius: '12px', color: 'white' }}
-                                        formatter={(value: any) => [`₹${Math.abs(value).toLocaleString()}`, value < 0 ? 'Debt' : 'Available']}
+                                        cursor={{ fill: 'rgba(255,255,255,0.05)', radius: 10 }}
+                                        contentStyle={{ backgroundColor: '#000', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '12px', color: '#fff' }}
+                                        formatter={(value: any) => [`₹${Math.abs(value).toLocaleString()}`, value < 0 ? 'LIABILITY' : 'ASSET']}
                                     />
-                                    <Bar dataKey="value" radius={[0, 4, 4, 0]} barSize={30}>
+                                    <Bar dataKey="value" radius={[0, 10, 10, 0]} barSize={24}>
                                         {accountData.map((entry, index) => (
-                                            <Cell key={`cell-${index}`} fill={entry.value < 0 ? '#ff4d4d' : '#ffffff'} />
+                                            <Cell key={`cell-${index}`} fill={entry.value < 0 ? '#ff3b3b' : '#ffffff'} fillOpacity={0.9} />
                                         ))}
                                     </Bar>
                                 </BarChart>

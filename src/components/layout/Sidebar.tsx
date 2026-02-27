@@ -33,9 +33,9 @@ export function Sidebar() {
 
     return (
         <aside className="fixed left-0 top-0 z-40 h-screen w-64 glass text-white transition-transform sm:translate-x-0 hidden sm:flex flex-col border-r-0">
-            <div className="flex h-16 items-center px-6 border-b border-[var(--border-color)]">
-                <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-500 to-indigo-600">
-                    Clarity
+            <div className="flex h-20 items-center px-6 border-b border-white/10">
+                <span className="text-2xl font-black tracking-tighter text-white">
+                    CLARITY<span className="text-blue-500">.</span>
                 </span>
             </div>
 

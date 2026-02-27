@@ -6,6 +6,7 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Lenis from "lenis";
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { usePathname } from "next/navigation";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -17,8 +18,10 @@ import PageTransitionShader from "./PageTransitionShader";
 
 export default function MotionProvider({ children }: { children: React.ReactNode }) {
     const [lenis, setLenis] = useState<Lenis | null>(null);
+    const [isContentVisible, setIsContentVisible] = useState(false);
     const cursorRef = useRef<HTMLDivElement>(null);
     const followerRef = useRef<HTMLDivElement>(null);
+    const pathname = usePathname();
 
     useEffect(() => {
         const lenisInstance = new Lenis({
@@ -52,33 +55,40 @@ export default function MotionProvider({ children }: { children: React.ReactNode
         const yFollowerTo = gsap.quickTo(followerRef.current, "y", { duration: 0.3, ease: "power3" });
 
         const moveCursor = (e: MouseEvent) => {
-            xTo(e.clientX);
-            yTo(e.clientY);
-            xFollowerTo(e.clientX);
-            yFollowerTo(e.clientY);
+            const { clientX, clientY, target } = e;
+            xTo(clientX);
+            yTo(clientY);
+            xFollowerTo(clientX);
+            yFollowerTo(clientY);
+
+            // Hover effect for interactive elements
+            if ((target as HTMLElement).closest('button, a, .glass')) {
+                gsap.to(followerRef.current, { width: 80, height: 80, borderColor: "white", duration: 0.3 });
+            } else {
+                gsap.to(followerRef.current, { width: 40, height: 40, borderColor: "rgba(255,255,255,0.2)", duration: 0.3 });
+            }
         };
 
         window.addEventListener("mousemove", moveCursor);
         return () => window.removeEventListener("mousemove", moveCursor);
     }, []);
 
+    // Handle Reveal
+    useEffect(() => {
+        setIsContentVisible(false);
+        const timer = setTimeout(() => setIsContentVisible(true), 600); // Sync with transition half-way
+        return () => clearTimeout(timer);
+    }, [pathname]);
+
     return (
         <MotionContext.Provider value={{ lenis }}>
             <PageTransitionShader />
             <div className="noise" />
             <div ref={cursorRef} className="custom-cursor hidden md:block" />
-            <div ref={followerRef} className="custom-cursor-follower hidden md:block" />
-            <AnimatePresence mode="wait">
-                <motion.div
-                    key="motion-content"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.5, ease: "easeInOut" }}
-                >
-                    {children}
-                </motion.div>
-            </AnimatePresence>
+            <div ref={followerRef} className="custom-cursor-follower hidden md:box-border md:block" />
+            <div className={`transitioning-content ${isContentVisible ? "show" : ""}`}>
+                {children}
+            </div>
         </MotionContext.Provider>
     );
 }

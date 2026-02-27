@@ -175,21 +175,21 @@ export default function Dashboard() {
       >
         {/* Metric Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <motion.div variants={itemVariants} className="glass p-6 rounded-3xl">
-            <p className="text-[10px] font-bold text-dim uppercase tracking-widest mb-1">Liquid Cash</p>
-            <h3 className="text-3xl font-bold">₹{stats.balance.toLocaleString()}</h3>
+          <motion.div variants={itemVariants} className="glass p-6 rounded-[2rem] border-white/5 shadow-2xl">
+            <p className="text-[10px] font-black text-white/40 uppercase tracking-widest mb-1">Liquid Cash</p>
+            <h3 className="text-3xl font-black text-white">₹{stats.balance.toLocaleString()}</h3>
           </motion.div>
-          <motion.div variants={itemVariants} className="glass p-6 rounded-3xl">
-            <p className="text-[10px] font-bold text-dim uppercase tracking-widest mb-1">Total Debt</p>
-            <h3 className="text-3xl font-bold text-red-400">₹{stats.creditDebt.toLocaleString()}</h3>
+          <motion.div variants={itemVariants} className="glass p-6 rounded-[2rem] border-white/5 shadow-2xl">
+            <p className="text-[10px] font-black text-white/40 uppercase tracking-widest mb-1">Total Debt</p>
+            <h3 className="text-3xl font-black text-red-500">₹{stats.creditDebt.toLocaleString()}</h3>
           </motion.div>
-          <motion.div variants={itemVariants} className="glass p-6 rounded-3xl">
-            <p className="text-[10px] font-bold text-dim uppercase tracking-widest mb-1">Monthly Inflow</p>
-            <h3 className="text-3xl font-bold text-emerald-400">₹{stats.income.toLocaleString()}</h3>
+          <motion.div variants={itemVariants} className="glass p-6 rounded-[2rem] border-white/5 shadow-2xl">
+            <p className="text-[10px] font-black text-white/40 uppercase tracking-widest mb-1">Monthly Inflow</p>
+            <h3 className="text-3xl font-black text-emerald-500">₹{stats.income.toLocaleString()}</h3>
           </motion.div>
-          <motion.div variants={itemVariants} className="glass p-6 rounded-3xl">
-            <p className="text-[10px] font-bold text-dim uppercase tracking-widest mb-1">Monthly Outflow</p>
-            <h3 className="text-3xl font-bold text-amber-400">₹{stats.expenses.toLocaleString()}</h3>
+          <motion.div variants={itemVariants} className="glass p-6 rounded-[2rem] border-white/5 shadow-2xl">
+            <p className="text-[10px] font-black text-white/40 uppercase tracking-widest mb-1">Monthly Outflow</p>
+            <h3 className="text-3xl font-black text-amber-500">₹{stats.expenses.toLocaleString()}</h3>
           </motion.div>
         </div>
 
@@ -208,13 +208,16 @@ export default function Dashboard() {
                 <AreaChart data={stats.chartData}>
                   <defs>
                     <linearGradient id="fade" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="white" stopOpacity={0.1} />
-                      <stop offset="95%" stopColor="white" stopOpacity={0} />
+                      <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.4} />
+                      <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
                     </linearGradient>
                   </defs>
-                  <Tooltip contentStyle={{ backgroundColor: 'black', border: 'none', borderRadius: '1rem' }} />
-                  <Area type="monotone" dataKey="income" stroke="#ffffff" fill="url(#fade)" strokeWidth={3} />
-                  <Area type="monotone" dataKey="expense" stroke="#ef4444" fill="transparent" strokeWidth={1} strokeDasharray="5 5" />
+                  <Tooltip
+                    contentStyle={{ backgroundColor: 'black', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '1rem' }}
+                    itemStyle={{ color: 'white', fontWeight: 'bold' }}
+                  />
+                  <Area type="monotone" dataKey="income" stroke="#3b82f6" fill="url(#fade)" strokeWidth={3} />
+                  <Area type="monotone" dataKey="expense" stroke="#ff4d4d" fill="transparent" strokeWidth={1} strokeDasharray="5 5" />
                 </AreaChart>
               </ResponsiveContainer>
             </div>

@@ -20,13 +20,15 @@ const fragmentShader = `
 
   void main() {
     float dist = distance(vUv, vec2(0.5));
-    float circle = 1.0 - smoothstep(uProgress - 0.1, uProgress, dist);
     
     // Liquid effect
-    float noise = sin(vUv.x * 10.0 + uTime) * cos(vUv.y * 10.0 + uTime) * 0.05;
-    float alpha = 1.0 - smoothstep(uProgress - 0.2 + noise, uProgress + noise, dist);
+    float noise = sin(vUv.x * 12.0 + uTime) * cos(vUv.y * 12.0 + uTime) * 0.08;
+    float alpha = 1.0 - smoothstep(uProgress - 0.25 + noise, uProgress + noise, dist);
     
-    gl_FragColor = vec4(0.0, 0.0, 0.0, alpha);
+    // Luxury dark color with slight blue tint
+    vec3 color = vec3(0.02, 0.02, 0.05);
+    
+    gl_FragColor = vec4(color, alpha);
   }
 `;
 
@@ -36,7 +38,7 @@ function TransitionPlane({ onComplete }: { onComplete: () => void }) {
     const [progress, setProgress] = useState(0);
 
     const uniforms = useMemo(() => ({
-        uProgress: { value: 0 },
+        uProgress: { value: 1.5 },
         uTime: { value: 0 },
     }), []);
 
@@ -96,7 +98,7 @@ export default function PageTransitionShader() {
 
     return (
         <div className="fixed inset-0 z-[10000] pointer-events-none">
-            <Canvas camera={{ position: [0, 0, 1] }}>
+            <Canvas camera={{ position: [0, 0, 1] }} style={{ pointerEvents: 'none' }}>
                 <TransitionPlane onComplete={() => setIsVisible(false)} />
             </Canvas>
         </div>
