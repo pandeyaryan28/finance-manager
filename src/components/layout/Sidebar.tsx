@@ -11,6 +11,8 @@ import {
     Wallet,
     BarChart3,
     LineChart,
+    CreditCard as CardIcon,
+    HandCoins,
     LogOut,
     Settings,
 } from "lucide-react";
@@ -19,6 +21,8 @@ const navItems = [
     { name: "Dashboard", href: "/", icon: LayoutDashboard },
     { name: "Transactions", href: "/transactions", icon: ArrowRightLeft },
     { name: "Analytics", href: "/analytics", icon: LineChart },
+    { name: "Credit Cards", href: "/credit-cards", icon: CardIcon },
+    { name: "Lending", href: "/lending", icon: HandCoins },
     { name: "Budgets", href: "/budgets", icon: PieChart },
     { name: "Net Worth", href: "/net-worth", icon: Wallet },
     { name: "Reports", href: "/reports", icon: BarChart3 },

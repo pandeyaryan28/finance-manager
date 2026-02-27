@@ -29,7 +29,7 @@ export default function Dashboard() {
     income: 0,
     expenses: 0,
     savingsRate: 0,
-    transactions: [] as Transaction[],
+    transactions: [] as (Transaction & { category?: any, account?: any })[],
     accounts: [] as any[],
     chartData: [] as any[]
   });

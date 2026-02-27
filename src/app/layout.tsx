@@ -6,6 +6,8 @@ import { ModalProvider } from "@/lib/ModalContext";
 import { TransactionModal } from "@/components/ui/TransactionModal";
 import { CategoryModal } from "@/components/ui/CategoryModal";
 import { AccountModal } from "@/components/ui/AccountModal";
+import { CreditCardModal } from "@/components/ui/CreditCardModal";
+import { LendingModal } from "@/components/ui/LendingModal";
 import { StorageInitializer } from "@/components/StorageInitializer";
 
 export const metadata: Metadata = {
@@ -35,6 +37,8 @@ export default function RootLayout({
           <TransactionModal />
           <CategoryModal />
           <AccountModal />
+          <CreditCardModal />
+          <LendingModal />
         </ModalProvider>
       </body>
     </html>

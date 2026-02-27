@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { X, Check } from "lucide-react";
+import { X, Check, CreditCard as CardIcon } from "lucide-react";
 import { useModal } from "@/lib/ModalContext";
-import { storage, Category, Account } from "@/lib/storage";
+import { storage, Category, Account, CreditCard } from "@/lib/storage";
 
 export function TransactionModal() {
     const { activeModal, closeModal } = useModal();
@@ -12,6 +12,7 @@ export function TransactionModal() {
     const [success, setSuccess] = useState(false);
     const [categories, setCategories] = useState<Category[]>([]);
     const [accounts, setAccounts] = useState<Account[]>([]);
+    const [creditCards, setCreditCards] = useState<CreditCard[]>([]);
 
     const [form, setForm] = useState({
         title: "",
@@ -20,20 +21,27 @@ export function TransactionModal() {
         date: new Date().toISOString().split('T')[0],
         category_id: "",
         account_id: "",
+        credit_card_id: "",
         notes: "",
-        is_pending: false
+        is_pending: false,
+        is_credit_card: false
     });
 
     useEffect(() => {
         if (activeModal === "add-transaction") {
             setCategories(storage.getCategories());
             setAccounts(storage.getAccounts());
+            setCreditCards(storage.getCreditCards());
         }
     }, [activeModal]);
 
     const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!form.title || !form.amount || !form.category_id || !form.account_id) return;
+
+        // Validation: Account is needed if not credit card, else credit card is needed
+        if (!form.title || !form.amount || !form.category_id) return;
+        if (!form.is_credit_card && !form.account_id) return;
+        if (form.is_credit_card && !form.credit_card_id) return;
 
         setLoading(true);
         try {
@@ -43,7 +51,8 @@ export function TransactionModal() {
                 type: form.type,
                 date: form.date,
                 category_id: form.category_id,
-                account_id: form.account_id,
+                account_id: form.is_credit_card ? "" : form.account_id,
+                credit_card_id: form.is_credit_card ? form.credit_card_id : undefined,
                 notes: form.notes,
                 is_pending: form.is_pending
             });
@@ -59,8 +68,10 @@ export function TransactionModal() {
                     date: new Date().toISOString().split('T')[0],
                     category_id: "",
                     account_id: "",
+                    credit_card_id: "",
                     notes: "",
-                    is_pending: false
+                    is_pending: false,
+                    is_credit_card: false
                 });
                 window.location.reload();
             }, 1000);
@@ -143,8 +154,10 @@ export function TransactionModal() {
                             />
                         </div>
 
-                        <div className="space-y-1.5">
-                            <label className="text-sm font-medium text-[var(--text-muted)]">Category</label>
+                        <div className="space-y-1.5 col-span-2">
+                            <div className="flex items-center justify-between mb-1.5">
+                                <label className="text-sm font-medium text-[var(--text-muted)]">Category</label>
+                            </div>
                             <select
                                 required
                                 value={form.category_id}
@@ -158,19 +171,61 @@ export function TransactionModal() {
                             </select>
                         </div>
 
-                        <div className="space-y-1.5">
-                            <label className="text-sm font-medium text-[var(--text-muted)]">Account</label>
-                            <select
-                                required
-                                value={form.account_id}
-                                onChange={(e) => setForm({ ...form, account_id: e.target.value })}
-                                className="w-full h-11 rounded-xl border border-[var(--border-color)] bg-[var(--bg-color)] px-4 focus:border-blue-500 focus:outline-none"
-                            >
-                                <option value="">Select Account</option>
-                                {accounts.map(a => (
-                                    <option key={a.id} value={a.id}>{a.name}</option>
-                                ))}
-                            </select>
+                        <div className="col-span-2 space-y-3">
+                            <div className="flex gap-4">
+                                <label className="flex items-center gap-2 cursor-pointer">
+                                    <input
+                                        type="radio"
+                                        checked={!form.is_credit_card}
+                                        onChange={() => setForm({ ...form, is_credit_card: false })}
+                                        className="w-4 h-4 text-blue-600 border-[var(--border-color)]"
+                                    />
+                                    <span className="text-sm font-medium">Standard Account</span>
+                                </label>
+                                {creditCards.length > 0 && (
+                                    <label className="flex items-center gap-2 cursor-pointer">
+                                        <input
+                                            type="radio"
+                                            checked={form.is_credit_card}
+                                            onChange={() => setForm({ ...form, is_credit_card: true })}
+                                            className="w-4 h-4 text-blue-600 border-[var(--border-color)]"
+                                        />
+                                        <span className="text-sm font-medium">Credit Card</span>
+                                    </label>
+                                )}
+                            </div>
+
+                            {!form.is_credit_card ? (
+                                <div className="space-y-1.5">
+                                    <label className="text-sm font-medium text-[var(--text-muted)]">Paid Via</label>
+                                    <select
+                                        required={!form.is_credit_card}
+                                        value={form.account_id}
+                                        onChange={(e) => setForm({ ...form, account_id: e.target.value })}
+                                        className="w-full h-11 rounded-xl border border-[var(--border-color)] bg-[var(--bg-color)] px-4 focus:border-blue-500 focus:outline-none"
+                                    >
+                                        <option value="">Select Account</option>
+                                        {accounts.map(a => (
+                                            <option key={a.id} value={a.id}>{a.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            ) : (
+                                <div className="space-y-1.5">
+                                    <label className="text-sm font-medium text-[var(--text-muted)]">Source Card</label>
+                                    <select
+                                        required={form.is_credit_card}
+                                        value={form.credit_card_id}
+                                        onChange={(e) => setForm({ ...form, credit_card_id: e.target.value })}
+                                        className="w-full h-11 rounded-xl border border-[var(--border-color)] bg-[var(--bg-color)] px-4 focus:border-blue-500 focus:outline-none"
+                                    >
+                                        <option value="">Select Card</option>
+                                        {creditCards.map(c => (
+                                            <option key={c.id} value={c.id}>{c.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            )}
                         </div>
 
                         <div className="col-span-2 flex items-center gap-3 p-3 rounded-xl border border-[var(--border-color)] bg-[var(--bg-color)]/50">
@@ -182,7 +237,7 @@ export function TransactionModal() {
                                 className="w-5 h-5 rounded border-[var(--border-color)] text-blue-600 focus:ring-blue-500"
                             />
                             <label htmlFor="is_pending" className="text-sm font-medium cursor-pointer">
-                                Mark as Pending (e.g. Credit Card Bill, Upcoming)
+                                Mark as Pending
                             </label>
                         </div>
                     </div>
