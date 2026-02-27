@@ -28,11 +28,19 @@ export function Header() {
                 <div className="h-8 w-px bg-[var(--border-color)] hidden sm:block"></div>
 
                 <button
-                    onClick={() => openModal("add-transaction")}
-                    className="flex h-9 w-9 sm:w-auto sm:px-4 items-center justify-center gap-2 rounded-full bg-blue-600 text-white hover:bg-blue-700 transition-colors shadow-md shadow-blue-500/20 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-[var(--bg-color)] font-medium"
+                    onClick={() => openModal("add-expense")}
+                    className="flex h-9 px-4 items-center justify-center gap-2 rounded-full bg-red-600/10 text-red-600 border border-red-600/20 hover:bg-red-600 hover:text-white transition-all font-medium"
                 >
-                    <Plus className="h-5 w-5" />
-                    <span className="hidden sm:inline-block">Add Transaction</span>
+                    <Plus className="h-4 w-4" />
+                    <span className="hidden sm:inline-block">Expense</span>
+                </button>
+
+                <button
+                    onClick={() => openModal("add-income")}
+                    className="flex h-9 px-4 items-center justify-center gap-2 rounded-full bg-emerald-600/10 text-emerald-600 border border-emerald-600/20 hover:bg-emerald-600 hover:text-white transition-all font-medium"
+                >
+                    <Plus className="h-4 w-4" />
+                    <span className="hidden sm:inline-block">Income</span>
                 </button>
 
                 <div className="h-9 w-9 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500 ml-1 sm:ml-2 shadow-sm border-2 border-white dark:border-[var(--card-color)] shrink-0" />

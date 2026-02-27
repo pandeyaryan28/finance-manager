@@ -83,11 +83,18 @@ export default function TransactionsPage() {
                         <Filter className="h-4 w-4" />
                     </button>
                     <button
-                        onClick={() => openModal("add-transaction")}
-                        className="flex h-9 items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 text-sm font-medium text-white hover:bg-blue-700 transition-colors shadow-md shadow-blue-500/20"
+                        onClick={() => openModal("add-expense")}
+                        className="flex h-9 items-center justify-center gap-2 rounded-xl bg-red-600 px-4 text-sm font-medium text-white hover:bg-red-700 transition-colors shadow-md shadow-red-500/20"
                     >
                         <Plus className="h-4 w-4" />
-                        <span>Add New</span>
+                        <span>Expense</span>
+                    </button>
+                    <button
+                        onClick={() => openModal("add-income")}
+                        className="flex h-9 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 text-sm font-medium text-white hover:bg-emerald-700 transition-colors shadow-md shadow-emerald-500/20"
+                    >
+                        <Plus className="h-4 w-4" />
+                        <span>Income</span>
                     </button>
                 </div>
             </div>

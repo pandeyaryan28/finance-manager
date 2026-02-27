@@ -3,7 +3,7 @@ import "./globals.css";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Header } from "@/components/layout/Header";
 import { ModalProvider } from "@/lib/ModalContext";
-import { TransactionModal } from "@/components/ui/TransactionModal";
+import { TransactionModals, CreditSpendModal } from "@/components/ui/TransactionModals";
 import { CategoryModal } from "@/components/ui/CategoryModal";
 import { AccountModal } from "@/components/ui/AccountModal";
 import { CreditCardModal } from "@/components/ui/CreditCardModal";
@@ -35,7 +35,8 @@ export default function RootLayout({
               </main>
             </div>
           </div>
-          <TransactionModal />
+          <TransactionModals />
+          <CreditSpendModal />
           <CategoryModal />
           <AccountModal />
           <CreditCardModal />

@@ -199,7 +199,7 @@ export default function CreditCardsPage() {
                                 {/* Actions Bar (Slides out or appears below) */}
                                 <div className="mt-4 flex gap-3 px-2">
                                     <button
-                                        onClick={() => openModal("add-transaction")} // We'll update the modal to support card selection
+                                        onClick={() => openModal("add-credit-spend")}
                                         className="flex-1 h-12 rounded-2xl bg-[var(--card-color)] border border-[var(--border-color)] text-sm font-bold hover:bg-blue-500/10 hover:border-blue-500/50 transition-all flex items-center justify-center gap-2 group"
                                     >
                                         <Plus className="w-4 h-4 text-blue-500 group-hover:scale-110 transition-transform" />
