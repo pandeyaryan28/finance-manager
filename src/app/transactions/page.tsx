@@ -46,10 +46,16 @@ export default function TransactionsPage() {
         fetchData();
     }, []);
 
-    const handleDelete = (id: string) => {
-        if (!confirm("Are you sure you want to delete this transaction?")) return;
+    const handleDelete = (id: string, origin: string) => {
+        if (!confirm("Are you sure you want to delete this recording?")) return;
         try {
-            storage.deleteTransaction(id);
+            if (origin === 'credit') {
+                storage.deleteCreditSpend(id);
+            } else if (origin === 'repayment') {
+                storage.deleteCreditRepayment(id);
+            } else {
+                storage.deleteTransaction(id);
+            }
             fetchData();
         } catch (e) {
             console.error(e);
@@ -155,7 +161,7 @@ export default function TransactionsPage() {
                                 </div>
                                 <div className="flex justify-center gap-2">
                                     <button
-                                        onClick={() => handleDelete(tx.id)}
+                                        onClick={() => handleDelete(tx.id, tx.origin)}
                                         className="p-2 rounded-lg hover:bg-red-500/10 text-[var(--text-muted)] hover:text-red-500 transition-all"
                                     >
                                         <Trash2 className="w-4 h-4" />

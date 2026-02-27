@@ -158,10 +158,65 @@ export const storage = {
         return newTx;
     },
 
+    addIncome: (income: Omit<Transaction, 'id' | 'type'>) => {
+        return storage.addTransaction({ ...income, type: 'income' });
+    },
+
+    addExpense: (expense: Omit<Transaction, 'id' | 'type'>) => {
+        return storage.addTransaction({ ...expense, type: 'expense' });
+    },
+
     deleteTransaction: (id: string) => {
         const txs = JSON.parse(localStorage.getItem(STORAGE_KEYS.TRANSACTIONS) || '[]');
         const filtered = txs.filter((t: any) => t.id !== id);
         localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(filtered));
+    },
+
+    deleteCreditSpend: (id: string) => {
+        const spends = JSON.parse(localStorage.getItem(STORAGE_KEYS.CREDIT_SPENDS) || '[]');
+        const spend = spends.find((s: any) => s.id === id);
+        if (!spend) return;
+
+        const filtered = spends.filter((s: any) => s.id !== id);
+        localStorage.setItem(STORAGE_KEYS.CREDIT_SPENDS, JSON.stringify(filtered));
+
+        // Reverse card balance
+        const cards = storage.getCreditCards();
+        const cardIdx = cards.findIndex(c => c.id === spend.card_id);
+        if (cardIdx !== -1) {
+            cards[cardIdx].current_balance -= spend.amount;
+            localStorage.setItem(STORAGE_KEYS.CREDIT_CARDS, JSON.stringify(cards));
+        }
+    },
+
+    deleteCreditRepayment: (id: string) => {
+        const repayments = JSON.parse(localStorage.getItem(STORAGE_KEYS.CREDIT_REPAYMENTS) || '[]');
+        const repayment = repayments.find((r: any) => r.id === id);
+        if (!repayment) return;
+
+        const filtered = repayments.filter((r: any) => r.id !== id);
+        localStorage.setItem(STORAGE_KEYS.CREDIT_REPAYMENTS, JSON.stringify(filtered));
+
+        // 1. Reverse card balance (Add debt back)
+        const cards = storage.getCreditCards();
+        const cardIdx = cards.findIndex(c => c.id === repayment.card_id);
+        if (cardIdx !== -1) {
+            cards[cardIdx].current_balance += repayment.amount;
+            localStorage.setItem(STORAGE_KEYS.CREDIT_CARDS, JSON.stringify(cards));
+        }
+
+        // 2. Remove the liquid transaction that was created
+        const txs = JSON.parse(localStorage.getItem(STORAGE_KEYS.TRANSACTIONS) || '[]');
+        // We'll try to find it by title and amount and date, slightly risky but standard for this simple storage
+        const liquidTxIdx = txs.findIndex((t: any) =>
+            t.amount === repayment.amount &&
+            t.date === repayment.date &&
+            t.account_id === repayment.from_account_id
+        );
+        if (liquidTxIdx !== -1) {
+            txs.splice(liquidTxIdx, 1);
+            localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(txs));
+        }
     },
 
     getCategories: (): Category[] => {
@@ -268,10 +323,9 @@ export const storage = {
         }
 
         // 2. Add to regular transactions (as expense from liquid account)
-        storage.addTransaction({
+        storage.addExpense({
             title: `CC Payment: ${cardName}`,
             amount: repayment.amount,
-            type: 'expense',
             date: repayment.date,
             category_id: 'repayment', // Special ID or handle UI
             account_id: repayment.from_account_id,

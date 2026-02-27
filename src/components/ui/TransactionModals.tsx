@@ -39,16 +39,21 @@ export function TransactionModals() {
 
         setLoading(true);
         try {
-            storage.addTransaction({
+            const txData = {
                 title: form.title,
                 amount: parseFloat(form.amount),
-                type: activeModal === "add-income" ? "income" : "expense",
                 date: form.date,
                 category_id: form.category_id,
                 account_id: form.account_id,
                 notes: form.notes,
                 is_pending: false
-            });
+            };
+
+            if (activeModal === "add-income") {
+                storage.addIncome(txData);
+            } else {
+                storage.addExpense(txData);
+            }
 
             setSuccess(true);
             setTimeout(() => {
