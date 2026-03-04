@@ -2,9 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, CreditCard as CardIcon, Calendar, ArrowRight, ShieldCheck, AlertCircle, IndianRupee, History } from "lucide-react";
+import {
+    Plus, CreditCard as CardIcon, Calendar, ArrowRight, ShieldCheck,
+    History, Trash2, Pencil, X, Check
+} from "lucide-react";
 import { useModal } from "@/lib/ModalContext";
-import { storage, CreditCard, Transaction } from "@/lib/storage";
+import { storage, CreditCard } from "@/lib/storage";
 
 export default function CreditCardsPage() {
     const { openModal } = useModal();
@@ -12,55 +15,54 @@ export default function CreditCardsPage() {
     const [spends, setSpends] = useState<any[]>([]);
     const [repayments, setRepayments] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [editingLimit, setEditingLimit] = useState<string | null>(null);
+    const [newLimit, setNewLimit] = useState("");
 
-    useEffect(() => {
-        const fetchData = () => {
-            try {
-                const fetchedCards = storage.getCreditCards();
-                const fetchedSpends = storage.getCreditSpends();
-                const fetchedRepays = storage.getCreditRepayments();
-                setCards(fetchedCards);
-                setSpends(fetchedSpends);
-                setRepayments(fetchedRepays);
-            } catch (e) {
-                console.error(e);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchData();
-    }, []);
+    const fetchData = () => {
+        try {
+            setCards(storage.getCreditCards());
+            setSpends(storage.getCreditSpends());
+            setRepayments(storage.getCreditRepayments());
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => { fetchData(); }, []);
 
     const getRemainingDays = (dueDate: number) => {
         const now = new Date();
-        const currentMonth = now.getMonth();
-        const currentYear = now.getFullYear();
-        let due = new Date(currentYear, currentMonth, dueDate);
+        let due = new Date(now.getFullYear(), now.getMonth(), dueDate);
+        if (due < now) due = new Date(now.getFullYear(), now.getMonth() + 1, dueDate);
+        return Math.ceil(Math.abs(due.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    };
 
-        if (due < now) {
-            due = new Date(currentYear, currentMonth + 1, dueDate);
+    const handleDeleteCard = (id: string, name: string) => {
+        if (!confirm(`Delete "${name}"? All spends and repayments for this card will also be removed.`)) return;
+        storage.deleteCreditCard(id);
+        fetchData();
+    };
+
+    const handleUpdateLimit = (id: string) => {
+        const val = parseFloat(newLimit);
+        if (val > 0) {
+            storage.updateCreditCardLimit(id, val);
+            setEditingLimit(null);
+            setNewLimit("");
+            fetchData();
         }
-
-        const diffTime = Math.abs(due.getTime() - now.getTime());
-        return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     };
 
     const containerVariants = {
         hidden: { opacity: 0 },
-        show: {
-            opacity: 1,
-            transition: { staggerChildren: 0.1 } as any
-        }
+        show: { opacity: 1, transition: { staggerChildren: 0.1 } as any }
     };
 
     const cardVariants = {
         hidden: { opacity: 0, y: 30, scale: 0.95 },
-        show: {
-            opacity: 1,
-            y: 0,
-            scale: 1,
-            transition: { type: "spring", stiffness: 300, damping: 25 } as any
-        }
+        show: { opacity: 1, y: 0, scale: 1, transition: { type: "spring", stiffness: 300, damping: 25 } as any }
     };
 
     if (loading) return (
@@ -70,12 +72,7 @@ export default function CreditCardsPage() {
     );
 
     return (
-        <motion.div
-            variants={containerVariants}
-            initial="hidden"
-            animate="show"
-            className="space-y-8"
-        >
+        <motion.div variants={containerVariants} initial="hidden" animate="show" className="space-y-8">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight">Credit Cards</h1>
@@ -109,21 +106,15 @@ export default function CreditCardsPage() {
             ) : (
                 <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
                     {cards.map((card) => {
-                        const utilization = (card.current_balance / card.limit) * 100;
+                        const utilization = card.limit > 0 ? (card.current_balance / card.limit) * 100 : 0;
                         const daysLeft = getRemainingDays(card.due_date);
                         const isCritical = utilization > 90 || daysLeft <= 5;
                         const isWarning = utilization > 70 || daysLeft <= 10;
 
                         return (
-                            <motion.div
-                                key={card.id}
-                                variants={cardVariants}
-                                className="group relative"
-                            >
-                                {/* Main Visual Card */}
+                            <motion.div key={card.id} variants={cardVariants} className="group relative">
                                 <div className={`relative z-10 p-8 rounded-[2.5rem] bg-gradient-to-br from-slate-900 to-black text-white shadow-2xl border border-white/5 overflow-hidden transition-all duration-500 hover:translate-y-[-4px] hover:shadow-blue-500/10`}>
-
-                                    {/* Decor */}
+                                    {/* Decorative blurs */}
                                     <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl -mr-20 -mt-20 group-hover:bg-blue-500/20 transition-all duration-700" />
                                     <div className="absolute bottom-0 left-0 w-32 h-32 bg-purple-500/10 rounded-full blur-2xl -ml-10 -mb-10 group-hover:bg-purple-500/20 transition-all duration-700" />
 
@@ -140,8 +131,17 @@ export default function CreditCardsPage() {
                                                 </div>
                                                 <h2 className="text-2xl font-bold tracking-tight">{card.name}</h2>
                                             </div>
-                                            <div className="w-12 h-8 bg-white/10 rounded-lg backdrop-blur-md border border-white/10 flex items-center justify-center overflow-hidden">
-                                                <div className="w-8 h-8 rotate-45 bg-gradient-to-br from-blue-400/30 to-purple-400/30" />
+                                            <div className="flex items-center gap-2">
+                                                <button
+                                                    onClick={() => handleDeleteCard(card.id, card.name)}
+                                                    className="p-2 rounded-xl hover:bg-red-500/20 text-white/30 hover:text-red-400 transition-all opacity-0 group-hover:opacity-100"
+                                                    title="Delete card"
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
+                                                <div className="w-12 h-8 bg-white/10 rounded-lg backdrop-blur-md border border-white/10 flex items-center justify-center overflow-hidden">
+                                                    <div className="w-8 h-8 rotate-45 bg-gradient-to-br from-blue-400/30 to-purple-400/30" />
+                                                </div>
                                             </div>
                                         </div>
 
@@ -157,17 +157,35 @@ export default function CreditCardsPage() {
                                             <div>
                                                 <div className="flex justify-between items-end mb-2 text-xs">
                                                     <span className="font-bold uppercase tracking-wider opacity-60">Limit Used: {utilization.toFixed(1)}%</span>
-                                                    <span className="font-medium opacity-80">Limit: ₹{card.limit.toLocaleString()}</span>
+                                                    {editingLimit === card.id ? (
+                                                        <div className="flex items-center gap-2">
+                                                            <input
+                                                                autoFocus
+                                                                type="number"
+                                                                value={newLimit}
+                                                                onChange={(e) => setNewLimit(e.target.value)}
+                                                                placeholder={card.limit.toString()}
+                                                                className="w-28 h-7 text-xs rounded-lg bg-white/10 border border-white/20 text-white px-2 focus:outline-none focus:border-blue-400"
+                                                            />
+                                                            <button onClick={() => handleUpdateLimit(card.id)} className="p-1 hover:bg-emerald-500/20 rounded-lg text-emerald-400"><Check className="w-3.5 h-3.5" /></button>
+                                                            <button onClick={() => { setEditingLimit(null); setNewLimit(""); }} className="p-1 hover:bg-red-500/20 rounded-lg text-red-400"><X className="w-3.5 h-3.5" /></button>
+                                                        </div>
+                                                    ) : (
+                                                        <button
+                                                            onClick={() => { setEditingLimit(card.id); setNewLimit(card.limit.toString()); }}
+                                                            className="font-medium opacity-80 flex items-center gap-1 hover:text-blue-400 transition-colors"
+                                                        >
+                                                            Limit: ₹{card.limit.toLocaleString()}
+                                                            <Pencil className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                                        </button>
+                                                    )}
                                                 </div>
                                                 <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden backdrop-blur-sm border border-white/5">
                                                     <motion.div
                                                         initial={{ width: 0 }}
-                                                        animate={{ width: `${utilization}%` }}
+                                                        animate={{ width: `${Math.min(utilization, 100)}%` }}
                                                         transition={{ duration: 1.5, ease: "circOut" }}
-                                                        className={`h-full rounded-full ${utilization > 90 ? "bg-red-500" :
-                                                            utilization > 70 ? "bg-amber-500" :
-                                                                "bg-gradient-to-r from-blue-400 to-indigo-500"
-                                                            }`}
+                                                        className={`h-full rounded-full ${utilization > 90 ? "bg-red-500" : utilization > 70 ? "bg-amber-500" : "bg-gradient-to-r from-blue-400 to-indigo-500"}`}
                                                     />
                                                 </div>
                                             </div>
@@ -188,7 +206,7 @@ export default function CreditCardsPage() {
                                                     </div>
                                                     <div>
                                                         <div className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Available</div>
-                                                        <div className="text-sm font-bold text-emerald-400">₹{(card.limit - card.current_balance).toLocaleString()}</div>
+                                                        <div className="text-sm font-bold text-emerald-400">₹{Math.max(0, card.limit - card.current_balance).toLocaleString()}</div>
                                                     </div>
                                                 </div>
                                             </div>
@@ -196,7 +214,7 @@ export default function CreditCardsPage() {
                                     </div>
                                 </div>
 
-                                {/* Actions Bar (Slides out or appears below) */}
+                                {/* Actions Bar */}
                                 <div className="mt-4 flex gap-3 px-2">
                                     <button
                                         onClick={() => openModal("add-credit-spend")}
@@ -219,12 +237,9 @@ export default function CreditCardsPage() {
                 </div>
             )}
 
-            {/* Statement History Placeholder */}
+            {/* Statement History */}
             {cards.length > 0 && (
-                <motion.div
-                    variants={cardVariants}
-                    className="card p-8"
-                >
+                <motion.div variants={cardVariants} className="card p-8">
                     <div className="flex items-center justify-between mb-8">
                         <div>
                             <h3 className="text-xl font-bold flex items-center gap-2">
@@ -234,7 +249,6 @@ export default function CreditCardsPage() {
                             <p className="text-sm text-[var(--text-muted)] mt-1">Review past billing cycles and recorded payments.</p>
                         </div>
                     </div>
-
                     <div className="divide-y divide-[var(--border-color)]">
                         {cards.map(card => {
                             const cardSpends = spends.filter(s => s.card_id === card.id);

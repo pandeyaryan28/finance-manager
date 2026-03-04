@@ -3,20 +3,9 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-    Plus,
-    HandCoins,
-    History,
-    ChevronDown,
-    ChevronUp,
-    ArrowUpCircle,
-    ArrowDownCircle,
-    User,
-    Calendar,
-    IndianRupee,
-    Filter,
-    CheckCircle2,
-    Clock,
-    AlertCircle
+    Plus, HandCoins, History, ChevronDown, ChevronUp,
+    ArrowUpCircle, ArrowDownCircle, Calendar,
+    CheckCircle2, Clock, Trash2
 } from "lucide-react";
 import { useModal } from "@/lib/ModalContext";
 import { storage, Lending, Repayment } from "@/lib/storage";
@@ -28,24 +17,28 @@ export default function LendingPage() {
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState<'all' | 'active' | 'repaid'>('all');
 
-    useEffect(() => {
-        const fetchData = () => {
-            try {
-                const fetched = storage.getLendingEntries();
-                setEntries(fetched);
-            } catch (e) {
-                console.error(e);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchData();
-    }, []);
+    const fetchData = () => {
+        try {
+            setEntries(storage.getLendingEntries());
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => { fetchData(); }, []);
 
     const toggleExpand = (id: string) => {
         setExpandedIds(prev =>
             prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
         );
+    };
+
+    const handleDelete = (id: string, name: string) => {
+        if (!confirm(`Delete lending record for "${name}"? All repayment history will also be removed.`)) return;
+        storage.deleteLendingEntry(id);
+        fetchData();
     };
 
     const filteredEntries = entries.filter(e => {
@@ -67,20 +60,12 @@ export default function LendingPage() {
 
     const containerVariants = {
         hidden: { opacity: 0 },
-        show: {
-            opacity: 1,
-            transition: { staggerChildren: 0.1 } as any
-        }
+        show: { opacity: 1, transition: { staggerChildren: 0.1 } as any }
     };
 
     const itemVariants = {
         hidden: { opacity: 0, scale: 0.95, y: 10 },
-        show: {
-            opacity: 1,
-            scale: 1,
-            y: 0,
-            transition: { type: "spring", stiffness: 350, damping: 25 } as any
-        }
+        show: { opacity: 1, scale: 1, y: 0, transition: { type: "spring", stiffness: 350, damping: 25 } as any }
     };
 
     if (loading) return (
@@ -90,16 +75,11 @@ export default function LendingPage() {
     );
 
     return (
-        <motion.div
-            variants={containerVariants}
-            initial="hidden"
-            animate="show"
-            className="space-y-6 max-w-6xl mx-auto"
-        >
+        <motion.div variants={containerVariants} initial="hidden" animate="show" className="space-y-6 max-w-6xl mx-auto">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Lending & Debts</h1>
-                    <p className="text-[var(--text-muted)] mt-1">Track interpersonal loans and repayments.</p>
+                    <h1 className="text-3xl font-bold tracking-tight">Lending</h1>
+                    <p className="text-[var(--text-muted)] mt-1">Track interpersonal loans — money you lent or borrowed.</p>
                 </div>
                 <button
                     onClick={() => openModal("add-lending")}
@@ -143,8 +123,7 @@ export default function LendingPage() {
                     <button
                         key={f}
                         onClick={() => setFilter(f)}
-                        className={`px-4 py-1.5 text-xs font-bold uppercase tracking-wider rounded-xl transition-all ${filter === f ? "bg-blue-600 text-white" : "text-[var(--text-muted)] hover:text-[var(--text-color)]"
-                            }`}
+                        className={`px-4 py-1.5 text-xs font-bold uppercase tracking-wider rounded-xl transition-all ${filter === f ? "bg-blue-600 text-white" : "text-[var(--text-muted)] hover:text-[var(--text-color)]"}`}
                     >
                         {f}
                     </button>
@@ -165,22 +144,15 @@ export default function LendingPage() {
                         </motion.div>
                     ) : (
                         filteredEntries.map((entry) => (
-                            <motion.div
-                                key={entry.id}
-                                layout
-                                variants={itemVariants}
-                                className="group"
-                            >
+                            <motion.div key={entry.id} layout variants={itemVariants} className="group">
                                 <div className={`card overflow-hidden border-l-4 transition-all ${entry.status === 'fully_repaid' ? "opacity-60 grayscale border-l-slate-400" :
-                                    entry.type === 'lent' ? "border-l-blue-500" : "border-l-purple-500"
-                                    }`}>
+                                    entry.type === 'lent' ? "border-l-blue-500" : "border-l-purple-500"}`}>
                                     <div
                                         onClick={() => toggleExpand(entry.id)}
                                         className="p-5 flex items-center justify-between cursor-pointer"
                                     >
                                         <div className="flex items-center gap-4">
-                                            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110 ${entry.type === 'lent' ? "bg-blue-500/10 text-blue-500" : "bg-purple-500/10 text-purple-500"
-                                                }`}>
+                                            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110 ${entry.type === 'lent' ? "bg-blue-500/10 text-blue-500" : "bg-purple-500/10 text-purple-500"}`}>
                                                 {entry.type === 'lent' ? <ArrowUpCircle className="w-6 h-6" /> : <ArrowDownCircle className="w-6 h-6" />}
                                             </div>
                                             <div>
@@ -198,11 +170,20 @@ export default function LendingPage() {
                                             </div>
                                         </div>
 
-                                        <div className="text-right">
-                                            <div className="text-xl font-bold tracking-tight">₹{entry.remaining_amount.toLocaleString()}</div>
-                                            <div className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest mt-0.5">
-                                                {entry.remaining_amount === 0 ? "Fully Repaid" : `Pending from ₹${entry.original_amount.toLocaleString()}`}
+                                        <div className="flex items-center gap-4">
+                                            <div className="text-right">
+                                                <div className="text-xl font-bold tracking-tight">₹{entry.remaining_amount.toLocaleString()}</div>
+                                                <div className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest mt-0.5">
+                                                    {entry.remaining_amount === 0 ? "Fully Repaid" : `Pending from ₹${entry.original_amount.toLocaleString()}`}
+                                                </div>
                                             </div>
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); handleDelete(entry.id, entry.person_name); }}
+                                                className="p-2 rounded-lg text-[var(--text-muted)] hover:bg-red-500/10 hover:text-red-500 transition-all opacity-0 group-hover:opacity-100"
+                                                title="Delete entry"
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
                                         </div>
                                     </div>
 
@@ -222,9 +203,8 @@ export default function LendingPage() {
                                                                 <History className="w-3.5 h-3.5" />
                                                                 Repayment History
                                                             </h4>
-
                                                             <div className="space-y-4 pl-3 border-l border-[var(--border-color)]">
-                                                                {storage.getRepaymentsForLending(entry.id).map((r, idx) => (
+                                                                {storage.getRepaymentsForLending(entry.id).map((r) => (
                                                                     <div key={r.id} className="relative flex items-center justify-between py-1">
                                                                         <div className="absolute -left-[13px] w-1.5 h-1.5 rounded-full bg-blue-500" />
                                                                         <div className="flex flex-col">

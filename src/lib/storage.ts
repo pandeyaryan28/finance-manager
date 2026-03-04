@@ -78,6 +78,29 @@ export interface Repayment {
     note?: string;
 }
 
+export interface Loan {
+    id: string;
+    name: string;
+    lender: string;
+    total_amount: number;
+    remaining_amount: number;
+    emi_amount: number;
+    emi_date: number; // day of month
+    interest_rate?: number;
+    start_date: string;
+    status: 'active' | 'completed';
+    notes?: string;
+    created_at: string;
+}
+
+export interface LoanPayment {
+    id: string;
+    loan_id: string;
+    amount: number;
+    date: string;
+    note?: string;
+}
+
 const STORAGE_KEYS = {
     TRANSACTIONS: 'clarity_transactions',
     CATEGORIES: 'clarity_categories',
@@ -87,7 +110,9 @@ const STORAGE_KEYS = {
     CREDIT_SPENDS: 'clarity_credit_spends',
     CREDIT_REPAYMENTS: 'clarity_credit_repayments',
     LENDING: 'clarity_lending',
-    REPAYMENTS: 'clarity_repayments'
+    REPAYMENTS: 'clarity_repayments',
+    LOANS: 'clarity_loans',
+    LOAN_PAYMENTS: 'clarity_loan_payments'
 };
 
 const DEFAULT_CATEGORIES: Category[] = [
@@ -133,6 +158,12 @@ export const storage = {
         }
         if (!localStorage.getItem(STORAGE_KEYS.REPAYMENTS)) {
             localStorage.setItem(STORAGE_KEYS.REPAYMENTS, JSON.stringify([]));
+        }
+        if (!localStorage.getItem(STORAGE_KEYS.LOANS)) {
+            localStorage.setItem(STORAGE_KEYS.LOANS, JSON.stringify([]));
+        }
+        if (!localStorage.getItem(STORAGE_KEYS.LOAN_PAYMENTS)) {
+            localStorage.setItem(STORAGE_KEYS.LOAN_PAYMENTS, JSON.stringify([]));
         }
     },
 
@@ -261,6 +292,27 @@ export const storage = {
     getCreditCards: (): CreditCard[] => {
         if (typeof window === 'undefined') return [];
         return JSON.parse(localStorage.getItem(STORAGE_KEYS.CREDIT_CARDS) || '[]');
+    },
+
+    updateCreditCardLimit: (id: string, newLimit: number) => {
+        const cards = storage.getCreditCards();
+        const idx = cards.findIndex(c => c.id === id);
+        if (idx !== -1) {
+            cards[idx].limit = newLimit;
+            localStorage.setItem(STORAGE_KEYS.CREDIT_CARDS, JSON.stringify(cards));
+        }
+    },
+
+    deleteCreditCard: (id: string) => {
+        const cards = storage.getCreditCards();
+        const filtered = cards.filter(c => c.id !== id);
+        localStorage.setItem(STORAGE_KEYS.CREDIT_CARDS, JSON.stringify(filtered));
+        // Clean up related spends
+        const spends = JSON.parse(localStorage.getItem(STORAGE_KEYS.CREDIT_SPENDS) || '[]');
+        localStorage.setItem(STORAGE_KEYS.CREDIT_SPENDS, JSON.stringify(spends.filter((s: any) => s.card_id !== id)));
+        // Clean up related repayments
+        const repayments = JSON.parse(localStorage.getItem(STORAGE_KEYS.CREDIT_REPAYMENTS) || '[]');
+        localStorage.setItem(STORAGE_KEYS.CREDIT_REPAYMENTS, JSON.stringify(repayments.filter((r: any) => r.card_id !== id)));
     },
 
     addCreditCard: (card: Omit<CreditCard, 'id' | 'current_balance' | 'statement_balance' | 'created_at'>) => {
@@ -393,5 +445,66 @@ export const storage = {
     getRepaymentsForLending: (lendingId: string): Repayment[] => {
         const repayments = JSON.parse(localStorage.getItem(STORAGE_KEYS.REPAYMENTS) || '[]');
         return repayments.filter((r: any) => r.lending_id === lendingId);
+    },
+
+    deleteLendingEntry: (id: string) => {
+        const entries = storage.getLendingEntries();
+        const filtered = entries.filter(e => e.id !== id);
+        localStorage.setItem(STORAGE_KEYS.LENDING, JSON.stringify(filtered));
+        // Clean up repayments
+        const repayments = JSON.parse(localStorage.getItem(STORAGE_KEYS.REPAYMENTS) || '[]');
+        localStorage.setItem(STORAGE_KEYS.REPAYMENTS, JSON.stringify(repayments.filter((r: any) => r.lending_id !== id)));
+    },
+
+    // Loan Methods
+    getLoans: (): Loan[] => {
+        if (typeof window === 'undefined') return [];
+        return JSON.parse(localStorage.getItem(STORAGE_KEYS.LOANS) || '[]');
+    },
+
+    addLoan: (loan: Omit<Loan, 'id' | 'remaining_amount' | 'status' | 'created_at'>) => {
+        const loans = storage.getLoans();
+        const newLoan: Loan = {
+            ...loan,
+            id: Math.random().toString(36).substr(2, 9),
+            remaining_amount: loan.total_amount,
+            status: 'active',
+            created_at: new Date().toISOString()
+        };
+        loans.push(newLoan);
+        localStorage.setItem(STORAGE_KEYS.LOANS, JSON.stringify(loans));
+        return newLoan;
+    },
+
+    deleteLoan: (id: string) => {
+        const loans = storage.getLoans();
+        const filtered = loans.filter(l => l.id !== id);
+        localStorage.setItem(STORAGE_KEYS.LOANS, JSON.stringify(filtered));
+        const payments = JSON.parse(localStorage.getItem(STORAGE_KEYS.LOAN_PAYMENTS) || '[]');
+        localStorage.setItem(STORAGE_KEYS.LOAN_PAYMENTS, JSON.stringify(payments.filter((p: any) => p.loan_id !== id)));
+    },
+
+    addLoanPayment: (payment: Omit<LoanPayment, 'id'>) => {
+        const payments = JSON.parse(localStorage.getItem(STORAGE_KEYS.LOAN_PAYMENTS) || '[]');
+        const newPayment = { ...payment, id: Math.random().toString(36).substr(2, 9) };
+        payments.push(newPayment);
+        localStorage.setItem(STORAGE_KEYS.LOAN_PAYMENTS, JSON.stringify(payments));
+
+        const loans = storage.getLoans();
+        const idx = loans.findIndex(l => l.id === payment.loan_id);
+        if (idx !== -1) {
+            loans[idx].remaining_amount -= payment.amount;
+            if (loans[idx].remaining_amount <= 0) {
+                loans[idx].remaining_amount = 0;
+                loans[idx].status = 'completed';
+            }
+            localStorage.setItem(STORAGE_KEYS.LOANS, JSON.stringify(loans));
+        }
+        return newPayment;
+    },
+
+    getLoanPayments: (loanId: string): LoanPayment[] => {
+        const payments = JSON.parse(localStorage.getItem(STORAGE_KEYS.LOAN_PAYMENTS) || '[]');
+        return payments.filter((p: any) => p.loan_id === loanId);
     }
 };

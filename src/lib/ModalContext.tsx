@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, ReactNode } from "react";
 
-type ModalType = "add-income" | "add-expense" | "add-credit-spend" | "add-budget" | "add-account" | "add-category" | "add-credit-card" | "add-credit-repayment" | "add-lending" | "add-repayment" | "settings" | null;
+type ModalType = "add-income" | "add-expense" | "add-credit-spend" | "add-budget" | "add-account" | "add-category" | "add-credit-card" | "add-credit-repayment" | "add-lending" | "add-repayment" | "add-loan" | "add-loan-payment" | "settings" | null;
 
 interface ModalContextType {
     activeModal: ModalType;

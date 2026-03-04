@@ -2,12 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Plus, Search, Filter, ArrowDownRight, ArrowUpRight, Trash2 } from "lucide-react";
-import { useModal } from "@/lib/ModalContext";
+import { Search, Filter, ArrowDownRight, ArrowUpRight, Trash2 } from "lucide-react";
 import { storage, Transaction } from "@/lib/storage";
 
 export default function TransactionsPage() {
-    const { openModal } = useModal();
     const [searchTerm, setSearchTerm] = useState("");
     const [allTransactions, setAllTransactions] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -87,20 +85,6 @@ export default function TransactionsPage() {
                     </div>
                     <button className="flex h-9 w-9 items-center justify-center rounded-xl border border-[var(--border-color)] bg-[var(--card-color)] hover:bg-[var(--bg-color)] transition-colors shadow-sm text-[var(--text-muted)] hover:text-[var(--text-color)]">
                         <Filter className="h-4 w-4" />
-                    </button>
-                    <button
-                        onClick={() => openModal("add-expense")}
-                        className="flex h-9 items-center justify-center gap-2 rounded-xl bg-red-600 px-4 text-sm font-medium text-white hover:bg-red-700 transition-colors shadow-md shadow-red-500/20"
-                    >
-                        <Plus className="h-4 w-4" />
-                        <span>Expense</span>
-                    </button>
-                    <button
-                        onClick={() => openModal("add-income")}
-                        className="flex h-9 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 text-sm font-medium text-white hover:bg-emerald-700 transition-colors shadow-md shadow-emerald-500/20"
-                    >
-                        <Plus className="h-4 w-4" />
-                        <span>Income</span>
                     </button>
                 </div>
             </div>

@@ -13,6 +13,7 @@ import {
     LineChart,
     CreditCard as CardIcon,
     HandCoins,
+    Landmark,
     Settings,
 } from "lucide-react";
 
@@ -22,6 +23,7 @@ const navItems = [
     { name: "Analytics", href: "/analytics", icon: LineChart },
     { name: "Credit Cards", href: "/credit-cards", icon: CardIcon },
     { name: "Lending", href: "/lending", icon: HandCoins },
+    { name: "Loans & EMIs", href: "/loans", icon: Landmark },
     { name: "Budgets", href: "/budgets", icon: PieChart },
     { name: "Net Worth", href: "/net-worth", icon: Wallet },
     { name: "Reports", href: "/reports", icon: BarChart3 },
