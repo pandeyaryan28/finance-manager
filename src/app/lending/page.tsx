@@ -259,22 +259,7 @@ export default function LendingPage() {
 
                                                             {entry.status !== 'fully_repaid' && (
                                                                 <button
-                                                                    onClick={() => {
-                                                                        // Open a custom repayment prompt
-                                                                        const amt = prompt(`Enter repayment amount for ${entry.person_name} (Max: ₹${entry.remaining_amount})`);
-                                                                        if (amt) {
-                                                                            const val = parseFloat(amt);
-                                                                            if (val > 0 && val <= entry.remaining_amount) {
-                                                                                storage.addRepayment({
-                                                                                    lending_id: entry.id,
-                                                                                    amount: val,
-                                                                                    date: new Date().toISOString().split('T')[0],
-                                                                                    note: "Partial repayment"
-                                                                                });
-                                                                                window.location.reload();
-                                                                            }
-                                                                        }
-                                                                    }}
+                                                                    onClick={() => openModal("add-repayment", { lendingEntry: entry })}
                                                                     className="w-full h-11 bg-blue-600 text-white rounded-xl text-sm font-bold shadow-lg shadow-blue-500/10 hover:bg-blue-700 transition-all flex items-center justify-center gap-2"
                                                                 >
                                                                     <Plus className="w-4 h-4" />

@@ -6,7 +6,8 @@ type ModalType = "add-income" | "add-expense" | "add-credit-spend" | "add-budget
 
 interface ModalContextType {
     activeModal: ModalType;
-    openModal: (type: ModalType) => void;
+    modalData: any;
+    openModal: (type: ModalType, data?: any) => void;
     closeModal: () => void;
 }
 
@@ -14,12 +15,19 @@ const ModalContext = createContext<ModalContextType | undefined>(undefined);
 
 export function ModalProvider({ children }: { children: ReactNode }) {
     const [activeModal, setActiveModal] = useState<ModalType>(null);
+    const [modalData, setModalData] = useState<any>(null);
 
-    const openModal = (type: ModalType) => setActiveModal(type);
-    const closeModal = () => setActiveModal(null);
+    const openModal = (type: ModalType, data?: any) => {
+        setModalData(data || null);
+        setActiveModal(type);
+    };
+    const closeModal = () => {
+        setActiveModal(null);
+        setModalData(null);
+    };
 
     return (
-        <ModalContext.Provider value={{ activeModal, openModal, closeModal }}>
+        <ModalContext.Provider value={{ activeModal, modalData, openModal, closeModal }}>
             {children}
         </ModalContext.Provider>
     );

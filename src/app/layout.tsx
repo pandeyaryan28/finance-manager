@@ -9,10 +9,10 @@ import { AccountModal } from "@/components/ui/AccountModal";
 import { CreditCardModal } from "@/components/ui/CreditCardModal";
 import CreditCardPaymentModal from "@/components/ui/CreditCardPaymentModal";
 import { LendingModal } from "@/components/ui/LendingModal";
+import { RepaymentModal } from "@/components/ui/RepaymentModal";
 import { StorageInitializer } from "@/components/StorageInitializer";
 import MotionProvider from "@/components/motion/MotionProvider";
 import GradientMesh from "@/components/visuals/GradientMesh";
-import HeroVisual from "@/components/visuals/HeroVisual";
 
 export const metadata: Metadata = {
   title: "Clarity | Cinematic Finance",
@@ -47,6 +47,7 @@ export default function RootLayout({
             <CreditCardModal />
             <CreditCardPaymentModal />
             <LendingModal />
+            <RepaymentModal />
           </ModalProvider>
         </MotionProvider>
       </body>

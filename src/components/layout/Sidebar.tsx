@@ -13,7 +13,6 @@ import {
     LineChart,
     CreditCard as CardIcon,
     HandCoins,
-    LogOut,
     Settings,
 } from "lucide-react";
 
@@ -78,14 +77,28 @@ export function Sidebar() {
                 </nav>
 
                 <div className="px-3 space-y-1 mt-auto">
-                    <button className="w-full group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-[var(--text-muted)] hover:bg-[var(--bg-color)] hover:text-[var(--text-color)] transition-colors">
-                        <Settings className="h-5 w-5 shrink-0" />
-                        <span>Settings</span>
-                    </button>
-                    <button className="w-full group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-[var(--text-muted)] hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-500/10 dark:hover:text-red-400 transition-colors">
-                        <LogOut className="h-5 w-5 shrink-0" />
-                        <span>Log out</span>
-                    </button>
+                    <Link
+                        href="/settings"
+                        className={cn(
+                            "w-full group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+                            pathname === "/settings"
+                                ? "text-blue-600 dark:text-blue-400"
+                                : "text-[var(--text-muted)] hover:bg-[var(--bg-color)] hover:text-[var(--text-color)]"
+                        )}
+                    >
+                        {pathname === "/settings" && (
+                            <motion.div
+                                layoutId="active-nav-bg"
+                                className="absolute inset-0 rounded-lg bg-blue-50 dark:bg-blue-500/10"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                            />
+                        )}
+                        <Settings className="h-5 w-5 shrink-0 z-10" />
+                        <span className="z-10">Settings</span>
+                    </Link>
                 </div>
             </div>
         </aside>

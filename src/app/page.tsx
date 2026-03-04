@@ -3,15 +3,11 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { motion, Variants } from "framer-motion";
-import { ArrowUpRight, ArrowDownRight, IndianRupee, Wallet, Target, Activity, Plus, CreditCard, Landmark, Banknote } from "lucide-react";
-import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid } from "recharts";
+import { ArrowUpRight, ArrowDownRight, Plus } from "lucide-react";
+import { Area, AreaChart, ResponsiveContainer, Tooltip } from "recharts";
 import { useModal } from "@/lib/ModalContext";
 import { storage, Transaction, Account } from "@/lib/storage";
-import { format, parseISO, startOfDay, eachDayOfInterval, subDays } from "date-fns";
-import HeroVisual from "@/components/visuals/HeroVisual";
-import StorySection from "@/components/landing/StorySection";
-import MorphCard from "@/components/motion/MorphCard";
-import Magnetic from "@/components/motion/Magnetic";
+import { format, startOfDay, eachDayOfInterval, subDays } from "date-fns";
 
 const containerVariants: Variants = {
   hidden: { opacity: 0 },
@@ -129,49 +125,38 @@ export default function Dashboard() {
     fetchData();
   }, []);
 
-  const getAccountIcon = (type: string) => {
-    switch (type) {
-      case 'Credit Card': return <CreditCard className="w-4 h-4" />;
-      case 'Bank': return <Landmark className="w-4 h-4" />;
-      default: return <Banknote className="w-4 h-4" />;
-    }
-  };
-
   return (
-    <div className="space-y-12 pb-32">
-      {/* Hero Section */}
-      <section className="relative h-[60vh] flex flex-col items-center justify-center text-center">
-        <HeroVisual />
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 1 }}
-          className="z-10"
-        >
-          <h1 className="text-7xl font-black tracking-tighter text-luxury mb-4">
-            CLARITY
-          </h1>
-          <div className="flex gap-4 justify-center">
-            <Magnetic>
-              <button onClick={() => openModal("add-expense")} className="px-8 py-3 bg-white text-black font-bold rounded-full text-sm">
-                Record Expense
-              </button>
-            </Magnetic>
-            <Magnetic>
-              <button onClick={() => openModal("add-income")} className="px-8 py-3 glass text-white font-bold rounded-full text-sm">
-                Add Income
-              </button>
-            </Magnetic>
-          </div>
-        </motion.div>
-      </section>
+    <div className="space-y-8 pb-16">
+      {/* Quick Actions Header */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+          <p className="text-[var(--text-muted)] mt-1">Your financial overview at a glance.</p>
+        </div>
+        <div className="flex gap-3">
+          <button
+            onClick={() => openModal("add-expense")}
+            className="flex h-10 items-center gap-2 rounded-xl bg-white text-black px-5 text-sm font-semibold hover:bg-gray-200 transition-all active:scale-95"
+          >
+            <Plus className="h-4 w-4" />
+            Expense
+          </button>
+          <button
+            onClick={() => openModal("add-income")}
+            className="flex h-10 items-center gap-2 rounded-xl glass border border-white/10 px-5 text-sm font-semibold text-white hover:bg-white/10 transition-all active:scale-95"
+          >
+            <Plus className="h-4 w-4" />
+            Income
+          </button>
+        </div>
+      </div>
 
       <motion.div
         variants={containerVariants}
         initial="hidden"
         whileInView="show"
         viewport={{ once: true }}
-        className="px-4 space-y-12"
+        className="space-y-8"
       >
         {/* Metric Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -180,7 +165,7 @@ export default function Dashboard() {
             <h3 className="text-3xl font-black text-white">₹{stats.balance.toLocaleString()}</h3>
           </motion.div>
           <motion.div variants={itemVariants} className="glass p-6 rounded-[2rem] border-white/5 shadow-2xl">
-            <p className="text-[10px] font-black text-white/40 uppercase tracking-widest mb-1">Total Debt</p>
+            <p className="text-[10px] font-black text-white/40 uppercase tracking-widest mb-1">Credit Card Bill</p>
             <h3 className="text-3xl font-black text-red-500">₹{stats.creditDebt.toLocaleString()}</h3>
           </motion.div>
           <motion.div variants={itemVariants} className="glass p-6 rounded-[2rem] border-white/5 shadow-2xl">
@@ -246,26 +231,13 @@ export default function Dashboard() {
                   </p>
                 </div>
               ))}
+              {stats.transactions.length === 0 && (
+                <p className="text-sm text-[var(--text-muted)] text-center py-6">No transactions yet.</p>
+              )}
             </div>
           </motion.div>
         </div>
       </motion.div>
-
-      {/* Storytelling & Features */}
-      <StorySection />
-
-      <div className="max-w-xl mx-auto px-4">
-        <MorphCard />
-      </div>
-
-      <section className="text-center py-24 px-4">
-        <h2 className="text-5xl font-black mb-12 text-luxury">Master Your Assets.</h2>
-        <Magnetic>
-          <Link href="/analytics" className="px-12 py-5 bg-white text-black font-bold rounded-full text-lg shadow-2xl">
-            Open Analytics Engine
-          </Link>
-        </Magnetic>
-      </section>
     </div>
   );
 }

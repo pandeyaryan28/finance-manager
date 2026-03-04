@@ -245,6 +245,18 @@ export const storage = {
         return newAcc;
     },
 
+    deleteAccount: (id: string) => {
+        const accs = storage.getAccounts();
+        const filtered = accs.filter(a => a.id !== id);
+        localStorage.setItem(STORAGE_KEYS.ACCOUNTS, JSON.stringify(filtered));
+    },
+
+    deleteCategory: (id: string) => {
+        const cats = storage.getCategories();
+        const filtered = cats.filter(c => c.id !== id);
+        localStorage.setItem(STORAGE_KEYS.CATEGORIES, JSON.stringify(filtered));
+    },
+
     // Credit Card Methods
     getCreditCards: (): CreditCard[] => {
         if (typeof window === 'undefined') return [];
