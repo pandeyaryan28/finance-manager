@@ -43,6 +43,14 @@ export default function AnalyticsPage() {
         netBalance: 0,
         creditDebt: 0
     });
+    const [portfolioData, setPortfolioData] = useState({
+        creditCards: [] as any[],
+        lendings: { lentAmount: 0, borrowedAmount: 0 },
+        loans: 0,
+        assets: 0,
+        netWorth: 0
+    });
+    const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
 
     useEffect(() => {
         const fetchData = () => {
@@ -53,19 +61,23 @@ export default function AnalyticsPage() {
                 const creditCards = storage.getCreditCards();
                 const creditSpends = storage.getCreditSpends();
                 const assets = storage.getAssets();
+                const lendings = storage.getLendingEntries();
+                const loans = storage.getLoans();
 
                 let liquidIncome = 0;
                 let liquidExpenses = 0;
                 let totalCreditSpend = 0;
 
-                const catMap: Record<string, number> = {};
+                const catMap: Record<string, { value: number, transactions: any[] }> = {};
 
                 transactions.forEach(t => {
                     if (t.is_pending) return;
                     if (t.type === 'expense') {
                         const cat = categories.find(c => c.id === t.category_id);
                         const catName = cat?.name || "Other";
-                        catMap[catName] = (catMap[catName] || 0) + t.amount;
+                        if (!catMap[catName]) catMap[catName] = { value: 0, transactions: [] };
+                        catMap[catName].value += t.amount;
+                        catMap[catName].transactions.push(t);
                         liquidExpenses += t.amount;
                     } else {
                         liquidIncome += t.amount;
@@ -75,13 +87,16 @@ export default function AnalyticsPage() {
                 creditSpends.forEach(s => {
                     const cat = categories.find(c => c.id === s.category_id);
                     const catName = cat?.name || "Other";
-                    catMap[catName] = (catMap[catName] || 0) + s.amount;
+                    if (!catMap[catName]) catMap[catName] = { value: 0, transactions: [] };
+                    catMap[catName].value += s.amount;
+                    catMap[catName].transactions.push(s);
                     totalCreditSpend += s.amount;
                 });
 
-                const formattedCatData = Object.entries(catMap).map(([name, value]) => ({
+                const formattedCatData = Object.entries(catMap).map(([name, data]) => ({
                     name,
-                    value
+                    value: data.value,
+                    transactions: data.transactions.sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime())
                 })).sort((a, b) => b.value - a.value);
 
                 const accData = accounts.map(acc => {
@@ -101,9 +116,21 @@ export default function AnalyticsPage() {
                     type: 'credit'
                 })).filter(c => Math.abs(c.value) > 0);
 
-                const totalExp = liquidExpenses + totalCreditSpend;
+                const totalExp = liquidExpenses;
                 const netBal = liquidIncome - totalExp;
                 const debt = creditCards.reduce((acc, c) => acc + c.current_balance, 0);
+
+                let lentAmount = 0;
+                let borrowedAmount = 0;
+                lendings.forEach(l => {
+                    if (l.type === 'lent') lentAmount += l.remaining_amount;
+                    else borrowedAmount += l.remaining_amount;
+                });
+                
+                const totalAssets = assets.reduce((acc, a) => acc + a.current_value, 0);
+                const remainingLoans = loans.reduce((acc, l) => acc + l.remaining_amount, 0);
+                
+                const netWorth = (totalAssets + netBal + lentAmount) - (debt + remainingLoans + borrowedAmount);
 
                 setCategoryData(formattedCatData);
                 setAccountData([...accData, ...creditData]);
@@ -112,6 +139,13 @@ export default function AnalyticsPage() {
                     totalExpenses: totalExp,
                     netBalance: netBal,
                     creditDebt: debt
+                });
+                setPortfolioData({
+                    creditCards,
+                    lendings: { lentAmount, borrowedAmount },
+                    loans: remainingLoans,
+                    assets: totalAssets,
+                    netWorth
                 });
 
                 // Generate Insights
@@ -122,14 +156,14 @@ export default function AnalyticsPage() {
                 }
                 if (formattedCatData.length > 0) {
                     const topCat = formattedCatData[0];
-                    const catPct = ((topCat.value / totalExp) * 100).toFixed(1);
+                    const totalCombinedExp = liquidExpenses + totalCreditSpend;
+                    const catPct = totalCombinedExp > 0 ? ((topCat.value / totalCombinedExp) * 100).toFixed(1) : "0.0";
                     generatedInsights.push(`${topCat.name} took the largest chunk of your expenses at ${catPct}%.`);
                 }
                 if (debt > 0 && netBal > 0) {
                     const debtRatio = ((debt / netBal) * 100).toFixed(1);
                     generatedInsights.push(`Your credit card dues equal ${debtRatio}% of your current liquid cash.`);
                 }
-                const totalAssets = assets.reduce((acc, a) => acc + a.current_value, 0);
                 if (totalAssets > 0) {
                     generatedInsights.push(`You currently hold ₹${totalAssets.toLocaleString()} in registered assets & investments.`);
                 }
@@ -362,18 +396,41 @@ export default function AnalyticsPage() {
                     <h3 className="font-bold text-sm text-[var(--text-muted)] uppercase tracking-wider mb-4">Detailed Category Analysis</h3>
                     <div className="space-y-3">
                         {categoryData.map((cat, i) => (
-                            <div key={i} className="flex items-center justify-between p-3 rounded-xl bg-[var(--bg-color)]/50 hover:bg-[var(--bg-color)] transition-all group">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
-                                    <span className="text-sm font-medium">{cat.name}</span>
-                                </div>
-                                <div className="flex items-center gap-4">
-                                    <span className="text-sm font-bold text-red-500">₹{cat.value.toLocaleString()}</span>
-                                    <div className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--border-color)] font-bold">
-                                        {((cat.value / summary.totalExpenses) * 100).toFixed(1)}%
+                            <div key={i} className="flex flex-col bg-[var(--bg-color)]/50 rounded-xl overflow-hidden group">
+                                <div 
+                                    className="flex items-center justify-between p-3 hover:bg-[var(--bg-color)] cursor-pointer transition-all"
+                                    onClick={() => setExpandedCategory(expandedCategory === cat.name ? null : cat.name)}
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
+                                        <span className="text-sm font-medium">{cat.name}</span>
                                     </div>
-                                    <ChevronRight className="w-4 h-4 text-[var(--border-color)] group-hover:text-[var(--text-color)] transition-colors" />
+                                    <div className="flex items-center gap-4">
+                                        <span className="text-sm font-bold text-red-500">₹{cat.value.toLocaleString()}</span>
+                                        <div className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--border-color)] font-bold">
+                                            {categoryData.reduce((acc, c) => acc + c.value, 0) > 0 ? ((cat.value / categoryData.reduce((acc, c) => acc + c.value, 0)) * 100).toFixed(1) : 0}%
+                                        </div>
+                                        <ChevronRight className={`w-4 h-4 text-[var(--border-color)] transition-transform ${expandedCategory === cat.name ? 'rotate-90 text-[var(--text-color)]' : 'group-hover:text-[var(--text-color)]'}`} />
+                                    </div>
                                 </div>
+                                {expandedCategory === cat.name && cat.transactions && (
+                                    <div className="px-3 pb-3 pt-1 space-y-2 border-t border-[var(--border-color)]/50 bg-black/20">
+                                        <div className="max-h-48 overflow-y-auto space-y-2 pr-2 custom-scrollbar">
+                                            {cat.transactions.map((tx: any, idx: number) => (
+                                                <div key={idx} className="flex justify-between items-center bg-[var(--card-color)] p-2 rounded-lg">
+                                                    <div>
+                                                        <div className="text-xs font-semibold">{tx.title || tx.notes || "Transaction"}</div>
+                                                        <div className="text-[10px] text-[var(--text-muted)]">{tx.date}</div>
+                                                    </div>
+                                                    <span className="text-xs font-bold text-white/80">₹{tx.amount.toLocaleString()}</span>
+                                                </div>
+                                            ))}
+                                            {cat.transactions.length === 0 && (
+                                                <div className="text-xs text-[var(--text-muted)] p-2 text-center">No transactions found</div>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         ))}
                     </div>
@@ -395,6 +452,61 @@ export default function AnalyticsPage() {
                                 </div>
                             </div>
                         ))}
+                    </div>
+                </motion.div>
+
+                {/* Additional Portfolio Details */}
+                <motion.div variants={itemVariants} className="card p-6 lg:col-span-2">
+                    <h3 className="font-bold text-sm text-[var(--text-muted)] uppercase tracking-wider mb-4">Comprehensive Portfolio</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div className="p-4 rounded-xl bg-[var(--bg-color)]/50 border border-[var(--border-color)]">
+                            <h4 className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider mb-2">Credit Cards</h4>
+                            <div className="space-y-2">
+                                {portfolioData.creditCards.map((card: any, i: number) => (
+                                    <div key={i} className="flex justify-between items-center text-sm">
+                                        <span>{card.name}</span>
+                                        <span className="text-red-400 font-bold">₹{card.current_balance.toLocaleString()} / ₹{card.limit.toLocaleString()}</span>
+                                    </div>
+                                ))}
+                                {portfolioData.creditCards.length === 0 && <p className="text-xs text-[var(--text-muted)] italic">No credit cards</p>}
+                            </div>
+                        </div>
+
+                        <div className="p-4 rounded-xl bg-[var(--bg-color)]/50 border border-[var(--border-color)]">
+                            <h4 className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider mb-2">Lending & Borrowing</h4>
+                            <div className="flex justify-between items-center text-sm mb-2">
+                                <span>Owed to You</span>
+                                <span className="text-emerald-400 font-bold">₹{portfolioData.lendings.lentAmount.toLocaleString()}</span>
+                            </div>
+                            <div className="flex justify-between items-center text-sm">
+                                <span>You Owe</span>
+                                <span className="text-red-400 font-bold">₹{portfolioData.lendings.borrowedAmount.toLocaleString()}</span>
+                            </div>
+                        </div>
+
+                        <div className="p-4 rounded-xl bg-[var(--bg-color)]/50 border border-[var(--border-color)]">
+                            <h4 className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider mb-2">Loans & EMIs</h4>
+                            <div className="flex justify-between items-center text-sm">
+                                <span>Total Remaining</span>
+                                <span className="text-red-400 font-bold">₹{portfolioData.loans.toLocaleString()}</span>
+                            </div>
+                        </div>
+
+                        <div className="p-4 rounded-xl bg-[var(--bg-color)]/50 border border-[var(--border-color)]">
+                            <h4 className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider mb-2">Assets</h4>
+                            <div className="flex justify-between items-center text-sm">
+                                <span>Total Valuation</span>
+                                <span className="text-emerald-400 font-bold">₹{portfolioData.assets.toLocaleString()}</span>
+                            </div>
+                        </div>
+
+                        <div className="p-4 rounded-xl bg-[var(--bg-color)]/50 border border-[var(--border-color)] lg:col-span-2">
+                            <h4 className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider mb-2">Net Worth</h4>
+                            <div className="text-3xl font-black text-white/90">
+                                ₹{portfolioData.netWorth.toLocaleString()}
+                            </div>
+                            <p className="text-[10px] text-[var(--text-muted)] mt-1">(Assets + Liquid + Owed to You) - (Credit + Loans + You Owe)</p>
+                        </div>
                     </div>
                 </motion.div>
             </div>

@@ -124,32 +124,32 @@ export default function Dashboard() {
       label: "Liquid Cash",
       value: stats.balance,
       icon: Wallet,
-      color: "text-white",
-      glow: "",
+      color: "text-emerald-400",
+      glow: "glow-emerald",
       prefix: "₹"
     },
     {
       label: "Credit Card Bill",
       value: stats.creditDebt,
       icon: CreditCard,
-      color: "text-red-400",
-      glow: "glow-red",
+      color: "text-orange-400",
+      glow: "glow-orange",
       prefix: "₹"
     },
     {
       label: "Monthly Inflow",
       value: stats.income,
       icon: TrendingUp,
-      color: "text-emerald-400",
-      glow: "glow-emerald",
+      color: "text-white",
+      glow: "",
       prefix: "₹"
     },
     {
       label: "Monthly Outflow",
       value: stats.expenses,
       icon: TrendingDown,
-      color: "text-amber-400",
-      glow: "glow-amber",
+      color: "text-red-400",
+      glow: "glow-red",
       prefix: "₹"
     }
   ];

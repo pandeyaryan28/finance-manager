@@ -71,7 +71,7 @@ export function LoanModal() {
                     </button>
                 </div>
 
-                <form onSubmit={handleSave} className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+                <form onSubmit={handleSave} className="p-6 space-y-4 max-h-[70vh] overflow-y-auto overscroll-contain">
                     <div className="space-y-1.5">
                         <label className="text-sm font-medium text-[var(--text-muted)]">Loan Name</label>
                         <input required type="text" placeholder="e.g. Home Loan, Car EMI..."
