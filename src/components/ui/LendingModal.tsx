@@ -12,7 +12,7 @@ export function LendingModal() {
     const [success, setSuccess] = useState(false);
     const [form, setForm] = useState({
         person_name: "",
-        type: "lent" as 'lent' | 'borrowed',
+        type: "lent" as const,
         original_amount: "",
         date: new Date().toISOString().split('T')[0],
         repayment_date: "",
@@ -76,22 +76,7 @@ export function LendingModal() {
                 </div>
 
                 <form onSubmit={handleSave} className="p-6 space-y-4">
-                    <div className="flex p-1 bg-[var(--bg-color)] rounded-xl border border-[var(--border-color)]">
-                        <button
-                            type="button"
-                            onClick={() => setForm({ ...form, type: "lent" })}
-                            className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${form.type === "lent" ? "bg-white dark:bg-slate-800 shadow-sm text-blue-500" : "text-[var(--text-muted)]"}`}
-                        >
-                            You Lent
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => setForm({ ...form, type: "borrowed" })}
-                            className={`flex-1 py-1.5 text-sm font-medium rounded-lg transition-all ${form.type === "borrowed" ? "bg-white dark:bg-slate-800 shadow-sm text-purple-500" : "text-[var(--text-muted)]"}`}
-                        >
-                            You Borrowed
-                        </button>
-                    </div>
+                    {/* Lent/Borrowed toggle removed as requested */}
 
                     <div className="space-y-1.5">
                         <label className="text-sm font-medium text-[var(--text-muted)]">Person / Entity</label>

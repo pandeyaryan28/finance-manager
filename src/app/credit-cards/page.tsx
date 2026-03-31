@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
     Plus, CreditCard as CardIcon, Calendar, ArrowRight, ShieldCheck,
-    History, Trash2, Pencil, X, Check
+    History, Trash2, Pencil, X, Check, ArrowDownRight, ArrowUpRight, ChevronDown, ChevronUp
 } from "lucide-react";
 import { useModal } from "@/lib/ModalContext";
 import { storage, CreditCard } from "@/lib/storage";
@@ -17,6 +17,7 @@ export default function CreditCardsPage() {
     const [loading, setLoading] = useState(true);
     const [editingLimit, setEditingLimit] = useState<string | null>(null);
     const [newLimit, setNewLimit] = useState("");
+    const [expandedCardId, setExpandedCardId] = useState<string | null>(null);
 
     const fetchData = () => {
         try {
@@ -253,9 +254,19 @@ export default function CreditCardsPage() {
                         {cards.map(card => {
                             const cardSpends = spends.filter(s => s.card_id === card.id);
                             const cardRepays = repayments.filter(r => r.card_id === card.id);
+                            const combinedHistory = [
+                                ...cardSpends.map(s => ({ ...s, isRepayment: false })),
+                                ...cardRepays.map(r => ({ ...r, isRepayment: true }))
+                            ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+                            const isExpanded = expandedCardId === card.id;
+
                             return (
                                 <div key={card.id} className="py-4 first:pt-0 last:pb-0">
-                                    <div className="flex items-center justify-between">
+                                    <div 
+                                        className="flex items-center justify-between cursor-pointer hover:bg-[var(--bg-color)]/50 p-2 rounded-xl transition-colors -mx-2"
+                                        onClick={() => setExpandedCardId(isExpanded ? null : card.id)}
+                                    >
                                         <div className="flex items-center gap-4">
                                             <div className="w-10 h-10 rounded-xl bg-[var(--bg-color)] flex items-center justify-center">
                                                 <CardIcon className="w-5 h-5 text-[var(--text-muted)]" />
@@ -267,7 +278,42 @@ export default function CreditCardsPage() {
                                                 </div>
                                             </div>
                                         </div>
+                                        <div className="text-[var(--text-muted)]">
+                                            {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                                        </div>
                                     </div>
+                                    
+                                    <AnimatePresence>
+                                        {isExpanded && (
+                                            <motion.div
+                                                initial={{ height: 0, opacity: 0 }}
+                                                animate={{ height: "auto", opacity: 1 }}
+                                                exit={{ height: 0, opacity: 0 }}
+                                                className="overflow-hidden mt-2"
+                                            >
+                                                <div className="bg-[var(--bg-color)]/30 border border-[var(--border-color)] rounded-xl p-4 space-y-3">
+                                                    {combinedHistory.length > 0 ? combinedHistory.map((item, idx) => (
+                                                        <div key={idx} className="flex items-center justify-between text-sm p-2 hover:bg-[var(--bg-color)] rounded-lg transition-colors">
+                                                            <div className="flex items-center gap-3">
+                                                                <div className={`p-1.5 rounded-lg ${item.isRepayment ? 'bg-emerald-500/10 text-emerald-500' : 'bg-red-500/10 text-red-500'}`}>
+                                                                    {item.isRepayment ? <ArrowUpRight className="w-4 h-4" /> : <ArrowDownRight className="w-4 h-4" />}
+                                                                </div>
+                                                                <div>
+                                                                    <div className="font-medium">{item.isRepayment ? 'Repayment' : item.title}</div>
+                                                                    <div className="text-xs text-[var(--text-muted)]">{new Date(item.date).toLocaleDateString()}</div>
+                                                                </div>
+                                                            </div>
+                                                            <div className={`font-bold ${item.isRepayment ? 'text-emerald-500' : ''}`}>
+                                                                {item.isRepayment ? '+' : '-'}₹{item.amount.toLocaleString()}
+                                                            </div>
+                                                        </div>
+                                                    )) : (
+                                                        <div className="text-center py-4 text-xs text-[var(--text-muted)]">No transactions recorded yet.</div>
+                                                    )}
+                                                </div>
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
                                 </div>
                             );
                         })}

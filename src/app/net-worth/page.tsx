@@ -25,6 +25,7 @@ export default function NetWorthPage() {
             const accounts = storage.getAccounts();
             const transactions = storage.getTransactions();
             const creditCards = storage.getCreditCards();
+            const investmentAssets = storage.getAssets();
 
             let assets = 0;
             let liabilities = 0;
@@ -66,6 +67,23 @@ export default function NetWorthPage() {
                 });
             });
 
+            // Add Investment Assets
+            let totalInvestments = 0;
+            investmentAssets.forEach(asset => {
+                totalInvestments += asset.current_value;
+            });
+
+            if (totalInvestments > 0) {
+                assets += totalInvestments;
+                dist.push({
+                    name: "Investment Portfolio",
+                    amount: totalInvestments,
+                    icon: <TrendingUp className="w-4 h-4" />,
+                    color: "text-emerald-500",
+                    bg: "bg-emerald-500/10"
+                });
+            }
+
             setStats(prev => ({
                 ...prev,
                 totalAssets: assets,
@@ -96,13 +114,13 @@ export default function NetWorthPage() {
                 <div className="card p-6 flex flex-col justify-between h-40">
                     <div className="flex items-center justify-between">
                         <span className="text-sm font-medium text-[var(--text-muted)]">Current Net Worth</span>
-                        <div className="p-2 bg-blue-500/10 text-blue-500 rounded-full">
+                        <div className="p-2 bg-slate-200/10 text-slate-200 rounded-full">
                             <Wallet className="w-4 h-4" />
                         </div>
                     </div>
                     <div>
-                        <div className="text-3xl font-bold tracking-tight">₹{stats.netWorth.toLocaleString()}</div>
-                        <div className="mt-1 flex items-center text-xs text-emerald-500 font-medium">
+                        <div className="text-3xl font-bold tracking-tight text-white">₹{stats.netWorth.toLocaleString()}</div>
+                        <div className="mt-1 flex items-center text-xs text-slate-300 font-medium">
                             <TrendingUp className="w-3 h-3 mr-1" />
                             <span>Calculated from {stats.distribution.length} accounts</span>
                         </div>

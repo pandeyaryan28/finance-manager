@@ -7,6 +7,7 @@ import { storage, Transaction } from "@/lib/storage";
 
 export default function TransactionsPage() {
     const [searchTerm, setSearchTerm] = useState("");
+    const [sortBy, setSortBy] = useState("date_desc");
     const [allTransactions, setAllTransactions] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -60,10 +61,18 @@ export default function TransactionsPage() {
         }
     };
 
-    const filteredTransactions = allTransactions.filter(t =>
-        t.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (t.category?.name || "").toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filteredTransactions = allTransactions
+        .filter(t =>
+            t.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (t.category?.name || "").toLowerCase().includes(searchTerm.toLowerCase())
+        )
+        .sort((a, b) => {
+            if (sortBy === 'date_desc') return new Date(b.date).getTime() - new Date(a.date).getTime();
+            if (sortBy === 'date_asc') return new Date(a.date).getTime() - new Date(b.date).getTime();
+            if (sortBy === 'amount_desc') return Math.abs(b.amount) - Math.abs(a.amount);
+            if (sortBy === 'amount_asc') return Math.abs(a.amount) - Math.abs(b.amount);
+            return 0;
+        });
 
     return (
         <div className="space-y-6">
@@ -83,9 +92,16 @@ export default function TransactionsPage() {
                             className="h-9 w-full sm:w-64 rounded-xl border border-[var(--border-color)] bg-[var(--card-color)] pl-9 pr-4 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all shadow-sm"
                         />
                     </div>
-                    <button className="flex h-9 w-9 items-center justify-center rounded-xl border border-[var(--border-color)] bg-[var(--card-color)] hover:bg-[var(--bg-color)] transition-colors shadow-sm text-[var(--text-muted)] hover:text-[var(--text-color)]">
-                        <Filter className="h-4 w-4" />
-                    </button>
+                    <select
+                        value={sortBy}
+                        onChange={(e) => setSortBy(e.target.value)}
+                        className="h-9 px-3 rounded-xl border border-[var(--border-color)] bg-[var(--card-color)] text-sm outline-none focus:border-blue-500 transition-all shadow-sm text-[var(--text-color)] appearance-none cursor-pointer"
+                    >
+                        <option value="date_desc">Newest First</option>
+                        <option value="date_asc">Oldest First</option>
+                        <option value="amount_desc">Amount (High to Low)</option>
+                        <option value="amount_asc">Amount (Low to High)</option>
+                    </select>
                 </div>
             </div>
 
