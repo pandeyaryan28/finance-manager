@@ -12,6 +12,7 @@ import { LendingModal } from "@/components/ui/LendingModal";
 import { RepaymentModal } from "@/components/ui/RepaymentModal";
 import { LoanModal } from "@/components/ui/LoanModal";
 import { LoanPaymentModal } from "@/components/ui/LoanPaymentModal";
+import { AssetModal } from "@/components/ui/AssetModal";
 import { StorageInitializer } from "@/components/StorageInitializer";
 import MotionProvider from "@/components/motion/MotionProvider";
 import GradientMesh from "@/components/visuals/GradientMesh";
@@ -52,6 +53,7 @@ export default function RootLayout({
             <RepaymentModal />
             <LoanModal />
             <LoanPaymentModal />
+            <AssetModal />
           </ModalProvider>
         </MotionProvider>
       </body>

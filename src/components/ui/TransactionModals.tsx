@@ -218,7 +218,10 @@ export function CreditSpendModal() {
         date: new Date().toISOString().split('T')[0],
         category_id: "",
         card_id: "",
-        notes: ""
+        notes: "",
+        is_emi: false,
+        emi_tenure: "3",
+        interest_rate: "15"
     });
 
     useEffect(() => {
@@ -244,7 +247,10 @@ export function CreditSpendModal() {
                 date: form.date,
                 category_id: form.category_id,
                 card_id: form.card_id,
-                notes: form.notes
+                notes: form.notes,
+                is_emi: form.is_emi,
+                emi_tenure: form.is_emi ? parseInt(form.emi_tenure) : undefined,
+                interest_rate: form.is_emi ? parseFloat(form.interest_rate) : undefined
             });
 
             setSuccess(true);
@@ -346,6 +352,52 @@ export function CreditSpendModal() {
                             ))}
                         </select>
                     </div>
+
+                    <div className="flex items-center gap-2 pt-2">
+                        <input
+                            type="checkbox"
+                            id="is_emi"
+                            checked={form.is_emi}
+                            onChange={(e) => setForm({ ...form, is_emi: e.target.checked })}
+                            className="w-4 h-4 rounded border-[var(--border-color)] accent-blue-600"
+                        />
+                        <label htmlFor="is_emi" className="text-sm font-semibold cursor-pointer">Convert to EMI</label>
+                    </div>
+
+                    <AnimatePresence>
+                        {form.is_emi && (
+                            <motion.div
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: "auto" }}
+                                exit={{ opacity: 0, height: 0 }}
+                                className="grid grid-cols-2 gap-4 overflow-hidden"
+                            >
+                                <div className="space-y-1.5 pt-2">
+                                    <label className="text-sm font-semibold ml-1">Tenure (Months)</label>
+                                    <input
+                                        required={form.is_emi}
+                                        type="number"
+                                        placeholder="3, 6, 9..."
+                                        value={form.emi_tenure}
+                                        onChange={(e) => setForm({ ...form, emi_tenure: e.target.value })}
+                                        className="w-full h-11 rounded-xl border border-[var(--border-color)] bg-[var(--bg-color)] px-4 focus:border-blue-500 focus:outline-none"
+                                    />
+                                </div>
+                                <div className="space-y-1.5 pt-2">
+                                    <label className="text-sm font-semibold ml-1">Interest Rate (%)</label>
+                                    <input
+                                        required={form.is_emi}
+                                        type="number"
+                                        step="0.1"
+                                        placeholder="15.0"
+                                        value={form.interest_rate}
+                                        onChange={(e) => setForm({ ...form, interest_rate: e.target.value })}
+                                        className="w-full h-11 rounded-xl border border-[var(--border-color)] bg-[var(--bg-color)] px-4 focus:border-blue-500 focus:outline-none"
+                                    />
+                                </div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
 
                     <div className="flex gap-3 pt-4">
                         <button

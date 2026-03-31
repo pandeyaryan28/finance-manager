@@ -15,6 +15,7 @@ import {
     HandCoins,
     Landmark,
     Settings,
+    TrendingUp
 } from "lucide-react";
 
 const navItems = [
@@ -25,6 +26,7 @@ const navItems = [
     { name: "Lending", href: "/lending", icon: HandCoins },
     { name: "Loans & EMIs", href: "/loans", icon: Landmark },
     { name: "Budgets", href: "/budgets", icon: PieChart },
+    { name: "Assets", href: "/assets", icon: TrendingUp },
     { name: "Net Worth", href: "/net-worth", icon: Wallet },
     { name: "Reports", href: "/reports", icon: BarChart3 },
 ];

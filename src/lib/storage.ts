@@ -34,6 +34,9 @@ export interface CreditCardSpend {
     date: string;
     category_id: string;
     notes?: string;
+    is_emi?: boolean;
+    emi_tenure?: number;
+    interest_rate?: number;
 }
 
 export interface CreditCardRepayment {
@@ -43,6 +46,17 @@ export interface CreditCardRepayment {
     amount: number;
     date: string;
     notes?: string;
+}
+
+export interface Asset {
+    id: string;
+    name: string;
+    type: 'Stock' | 'Mutual Fund' | 'Fixed Deposit' | 'Real Estate' | 'Gold' | 'Other';
+    current_value: number;
+    invested_amount: number;
+    purchase_date: string;
+    notes?: string;
+    created_at: string;
 }
 
 export interface CreditCard {
@@ -91,6 +105,8 @@ export interface Loan {
     status: 'active' | 'completed';
     notes?: string;
     created_at: string;
+    is_cc_emi?: boolean;
+    card_id?: string;
 }
 
 export interface LoanPayment {
@@ -112,7 +128,8 @@ const STORAGE_KEYS = {
     LENDING: 'clarity_lending',
     REPAYMENTS: 'clarity_repayments',
     LOANS: 'clarity_loans',
-    LOAN_PAYMENTS: 'clarity_loan_payments'
+    LOAN_PAYMENTS: 'clarity_loan_payments',
+    ASSETS: 'clarity_assets'
 };
 
 const DEFAULT_CATEGORIES: Category[] = [
@@ -164,6 +181,9 @@ export const storage = {
         }
         if (!localStorage.getItem(STORAGE_KEYS.LOAN_PAYMENTS)) {
             localStorage.setItem(STORAGE_KEYS.LOAN_PAYMENTS, JSON.stringify([]));
+        }
+        if (!localStorage.getItem(STORAGE_KEYS.ASSETS)) {
+            localStorage.setItem(STORAGE_KEYS.ASSETS, JSON.stringify([]));
         }
     },
 
@@ -351,10 +371,39 @@ export const storage = {
         // Update card balance
         const cards = storage.getCreditCards();
         const cardIdx = cards.findIndex(c => c.id === spend.card_id);
+        const cardName = cardIdx !== -1 ? cards[cardIdx].name : "Credit Card";
         if (cardIdx !== -1) {
             cards[cardIdx].current_balance += spend.amount;
             localStorage.setItem(STORAGE_KEYS.CREDIT_CARDS, JSON.stringify(cards));
         }
+        
+        // If it's an EMI, automatically create a Loan entry
+        if (spend.is_emi && spend.emi_tenure && spend.interest_rate !== undefined) {
+             const P = spend.amount;
+             const r = (spend.interest_rate / 12) / 100;
+             const n = spend.emi_tenure;
+             let emi = 0;
+             if (r === 0) {
+                 emi = P / n;
+             } else {
+                 emi = P * r * Math.pow(1 + r, n) / (Math.pow(1 + r, n) - 1);
+             }
+             const totalRepayment = emi * n;
+
+             storage.addLoan({
+                 name: `${cardName} EMI: ${spend.title}`,
+                 lender: cardName,
+                 total_amount: totalRepayment,
+                 emi_amount: emi,
+                 emi_date: parseInt(spend.date.split('-')[2], 10) || 5,
+                 interest_rate: spend.interest_rate,
+                 start_date: spend.date,
+                 notes: `Auto-generated EMI from Credit Card Spend: ${spend.title}`,
+                 is_cc_emi: true,
+                 card_id: spend.card_id
+             });
+        }
+        
         return newSpend;
     },
 
@@ -506,5 +555,38 @@ export const storage = {
     getLoanPayments: (loanId: string): LoanPayment[] => {
         const payments = JSON.parse(localStorage.getItem(STORAGE_KEYS.LOAN_PAYMENTS) || '[]');
         return payments.filter((p: any) => p.loan_id === loanId);
+    },
+
+    // Asset Methods
+    getAssets: (): Asset[] => {
+        if (typeof window === 'undefined') return [];
+        return JSON.parse(localStorage.getItem(STORAGE_KEYS.ASSETS) || '[]');
+    },
+
+    addAsset: (asset: Omit<Asset, 'id' | 'created_at'>) => {
+        const assets = storage.getAssets();
+        const newAsset: Asset = {
+            ...asset,
+            id: Math.random().toString(36).substr(2, 9),
+            created_at: new Date().toISOString()
+        };
+        assets.push(newAsset);
+        localStorage.setItem(STORAGE_KEYS.ASSETS, JSON.stringify(assets));
+        return newAsset;
+    },
+
+    deleteAsset: (id: string) => {
+        const assets = storage.getAssets();
+        const filtered = assets.filter(a => a.id !== id);
+        localStorage.setItem(STORAGE_KEYS.ASSETS, JSON.stringify(filtered));
+    },
+
+    updateAsset: (id: string, assetUpdate: Partial<Asset>) => {
+        const assets = storage.getAssets();
+        const idx = assets.findIndex(a => a.id === id);
+        if (idx !== -1) {
+            assets[idx] = { ...assets[idx], ...assetUpdate };
+            localStorage.setItem(STORAGE_KEYS.ASSETS, JSON.stringify(assets));
+        }
     }
 };
