@@ -12,8 +12,11 @@ import {
     ChevronRight,
     Calendar,
     CreditCard,
-    BrainCircuit
+    BrainCircuit,
+    LayoutDashboard,
+    Files
 } from "lucide-react";
+import { ReportsView } from "@/components/analytics/ReportsView";
 import {
     PieChart,
     Pie,
@@ -33,6 +36,7 @@ import { storage } from "@/lib/storage";
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#ec4899'];
 
 export default function AnalyticsPage() {
+    const [activeTab, setActiveTab] = useState<'overview' | 'reports'>('overview');
     const [loading, setLoading] = useState(true);
     const [categoryData, setCategoryData] = useState<any[]>([]);
     const [accountData, setAccountData] = useState<any[]>([]);
@@ -209,12 +213,26 @@ export default function AnalyticsPage() {
                     <h1 className="text-2xl font-bold tracking-tight">Financial Analytics</h1>
                     <p className="text-[var(--text-muted)]">Deep dive into your spending and fund distribution.</p>
                 </div>
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[var(--card-color)] border border-[var(--border-color)] text-xs font-medium">
-                    <Calendar className="w-3.5 h-3.5 text-emerald-500" />
-                    <span>ALL TIME OVERVIEW</span>
+                <div className="flex bg-[var(--card-color)] border border-[var(--border-color)] p-1 rounded-xl">
+                    <button
+                        onClick={() => setActiveTab('overview')}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'overview' ? 'bg-blue-500/10 text-blue-400' : 'text-[var(--text-muted)] hover:text-white'}`}
+                    >
+                        <LayoutDashboard className="w-4 h-4" /> Overview
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('reports')}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'reports' ? 'bg-purple-500/10 text-purple-400' : 'text-[var(--text-muted)] hover:text-white'}`}
+                    >
+                        <Files className="w-4 h-4" /> Reports
+                    </button>
                 </div>
             </div>
 
+            {activeTab === 'reports' ? (
+                <ReportsView />
+            ) : (
+                <>
             {/* Top Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <motion.div variants={itemVariants} className="glass p-6 rounded-3xl border-l-4 border-l-emerald-500 shadow-2xl">
@@ -367,28 +385,6 @@ export default function AnalyticsPage() {
                 </motion.div>
             </div>
 
-            {/* AI Insights Module */}
-            <motion.div variants={itemVariants} className="card p-6 bg-gradient-to-br from-[var(--card-color)] to-[var(--bg-color)] border border-emerald-500/20 shadow-xl shadow-emerald-500/5 relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none" />
-                <h3 className="font-bold text-lg flex items-center mb-4 text-emerald-400">
-                    <BrainCircuit className="w-5 h-5 mr-2" />
-                    Data Insights
-                </h3>
-                {insights.length > 0 ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 relative z-10">
-                        {insights.map((insight, idx) => (
-                            <div key={idx} className="flex items-start gap-3 p-4 rounded-2xl bg-black/20 border border-white/5 backdrop-blur-sm">
-                                <div className="p-1.5 rounded-full bg-emerald-500/20 text-emerald-400 mt-0.5">
-                                    <ChevronRight className="w-3 h-3" />
-                                </div>
-                                <p className="text-sm font-medium tracking-wide leading-relaxed text-white/90">{insight}</p>
-                            </div>
-                        ))}
-                    </div>
-                ) : (
-                    <p className="text-sm text-[var(--text-muted)] italic relative z-10">Record more transactions to generate personalized insights.</p>
-                )}
-            </motion.div>
 
             {/* List breakdown */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -415,7 +411,7 @@ export default function AnalyticsPage() {
                                 </div>
                                 {expandedCategory === cat.name && cat.transactions && (
                                     <div className="px-3 pb-3 pt-1 space-y-2 border-t border-[var(--border-color)]/50 bg-black/20">
-                                        <div className="max-h-48 overflow-y-auto space-y-2 pr-2 custom-scrollbar">
+                                        <div className="max-h-48 overflow-y-auto space-y-2 pr-2 custom-scrollbar overscroll-contain" onWheel={(e) => e.stopPropagation()}>
                                             {cat.transactions.map((tx: any, idx: number) => (
                                                 <div key={idx} className="flex justify-between items-center bg-[var(--card-color)] p-2 rounded-lg">
                                                     <div>
@@ -475,14 +471,10 @@ export default function AnalyticsPage() {
                         <div className="p-4 rounded-xl bg-[var(--bg-color)]/50 border border-[var(--border-color)]">
                             <h4 className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider mb-2">Lending & Borrowing</h4>
                             <div className="flex justify-between items-center text-sm mb-2">
-                                <span>Owed to You</span>
-                                <span className="text-emerald-400 font-bold">₹{portfolioData.lendings.lentAmount.toLocaleString()}</span>
-                            </div>
-                            <div className="flex justify-between items-center text-sm">
-                                <span>You Owe</span>
-                                <span className="text-red-400 font-bold">₹{portfolioData.lendings.borrowedAmount.toLocaleString()}</span>
-                            </div>
-                        </div>
+                                                <span>Owed to You</span>
+                                                <span className="text-emerald-400 font-bold">₹{portfolioData.lendings.lentAmount.toLocaleString()}</span>
+                                            </div>
+                                        </div>
 
                         <div className="p-4 rounded-xl bg-[var(--bg-color)]/50 border border-[var(--border-color)]">
                             <h4 className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider mb-2">Loans & EMIs</h4>
@@ -510,6 +502,31 @@ export default function AnalyticsPage() {
                     </div>
                 </motion.div>
             </div>
+
+            {/* AI Insights Module */}
+            <motion.div variants={itemVariants} className="card p-6 bg-gradient-to-br from-[var(--card-color)] to-[var(--bg-color)] border border-emerald-500/20 shadow-xl shadow-emerald-500/5 relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none" />
+                <h3 className="font-bold text-lg flex items-center mb-4 text-emerald-400">
+                    <BrainCircuit className="w-5 h-5 mr-2" />
+                    Data Insights
+                </h3>
+                {insights.length > 0 ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 relative z-10">
+                        {insights.map((insight, idx) => (
+                            <div key={idx} className="flex items-start gap-3 p-4 rounded-2xl bg-black/20 border border-white/5 backdrop-blur-sm">
+                                <div className="p-1.5 rounded-full bg-emerald-500/20 text-emerald-400 mt-0.5">
+                                    <ChevronRight className="w-3 h-3" />
+                                </div>
+                                <p className="text-sm font-medium tracking-wide leading-relaxed text-white/90">{insight}</p>
+                            </div>
+                        ))}
+                    </div>
+                ) : (
+                    <p className="text-sm text-[var(--text-muted)] italic relative z-10">Record more transactions to generate personalized insights.</p>
+                )}
+            </motion.div>
+                </>
+            )}
         </motion.div>
     );
 }

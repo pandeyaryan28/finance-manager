@@ -6,7 +6,7 @@ import { motion, Variants } from "framer-motion";
 import { ArrowUpRight, ArrowDownRight, TrendingUp, TrendingDown, Wallet, CreditCard, CircleDollarSign, BarChart3 } from "lucide-react";
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { storage, Transaction, Account } from "@/lib/storage";
-import { format, startOfDay, eachDayOfInterval, subDays } from "date-fns";
+import { format, startOfDay, eachDayOfInterval, subDays, isSameMonth } from "date-fns";
 
 const containerVariants: Variants = {
   hidden: { opacity: 0 },
@@ -38,15 +38,18 @@ export default function Dashboard() {
   useEffect(() => {
     const fetchData = () => {
       try {
-        const transactions = storage.getTransactions();
+        const allTransactions = storage.getTransactions();
         const accounts = storage.getAccounts();
         const creditSpends = storage.getCreditSpends();
         const creditCards = storage.getCreditCards();
 
+        const currentDate = new Date();
+        const monthlyTransactions = allTransactions.filter(t => isSameMonth(new Date(t.date), currentDate));
+
         let liquidIncome = 0;
         let liquidExpenses = 0;
 
-        transactions.forEach((t) => {
+        monthlyTransactions.forEach((t) => {
           if (t.is_pending) return;
           if (t.type === 'income') liquidIncome += t.amount;
           else liquidExpenses += t.amount;
@@ -54,7 +57,7 @@ export default function Dashboard() {
 
         const accountsWithBalance = accounts.map((acc) => {
           let accBalance = 0;
-          transactions.forEach((t) => {
+          allTransactions.forEach((t) => {
             if (t.account_id === acc.id && !t.is_pending) {
               if (t.type === 'income') accBalance += t.amount;
               else accBalance -= t.amount;
@@ -75,7 +78,7 @@ export default function Dashboard() {
           let dIncome = 0;
           let dExpense = 0;
 
-          transactions.forEach(t => {
+          allTransactions.forEach(t => {
             if (t.date === dateStr && !t.is_pending) {
               if (t.type === 'income') dIncome += t.amount;
               else dExpense += t.amount;
@@ -104,7 +107,7 @@ export default function Dashboard() {
           income: liquidIncome,
           expenses: liquidExpenses,
           savingsRate: Math.max(0, savingsRate),
-          transactions: transactions.sort((a, b) => b.date.localeCompare(a.date)).slice(0, 5),
+          transactions: monthlyTransactions.sort((a, b) => b.date.localeCompare(a.date)).slice(0, 5),
           accounts: accountsWithBalance,
           chartData: chartData,
           creditDebt: totalCreditDebt,

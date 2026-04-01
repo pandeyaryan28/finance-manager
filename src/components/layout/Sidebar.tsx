@@ -101,6 +101,9 @@ export function Sidebar() {
                         <Settings className="h-5 w-5 shrink-0 z-10" />
                         <span className="z-10">Settings</span>
                     </Link>
+                    <div className="pt-4 pb-2 text-center text-[10px] font-bold tracking-widest text-[var(--text-muted)] uppercase">
+                        v0.2.13
+                    </div>
                 </div>
             </div>
         </aside>

@@ -10,6 +10,7 @@ export function LoanModal() {
     const { activeModal, closeModal } = useModal();
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(false);
+    const [addEmi, setAddEmi] = useState(true);
     const [form, setForm] = useState({
         name: "",
         lender: "",
@@ -23,7 +24,8 @@ export function LoanModal() {
 
     const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!form.name || !form.lender || !form.total_amount || !form.emi_amount) return;
+        if (!form.name || !form.lender || !form.total_amount) return;
+        if (addEmi && !form.emi_amount) return;
 
         setLoading(true);
         try {
@@ -31,9 +33,9 @@ export function LoanModal() {
                 name: form.name,
                 lender: form.lender,
                 total_amount: parseFloat(form.total_amount),
-                emi_amount: parseFloat(form.emi_amount),
-                emi_date: parseInt(form.emi_date),
-                interest_rate: form.interest_rate ? parseFloat(form.interest_rate) : undefined,
+                emi_amount: addEmi ? parseFloat(form.emi_amount) : 0,
+                emi_date: addEmi ? parseInt(form.emi_date) : 1,
+                interest_rate: (addEmi && form.interest_rate) ? parseFloat(form.interest_rate) : undefined,
                 start_date: form.start_date,
                 notes: form.notes || undefined
             });
@@ -42,6 +44,7 @@ export function LoanModal() {
                 setSuccess(false);
                 closeModal();
                 setForm({ name: "", lender: "", total_amount: "", emi_amount: "", emi_date: "1", interest_rate: "", start_date: new Date().toISOString().split('T')[0], notes: "" });
+                setAddEmi(true);
                 window.location.reload();
             }, 1000);
         } catch (e) {
@@ -71,7 +74,7 @@ export function LoanModal() {
                     </button>
                 </div>
 
-                <form onSubmit={handleSave} className="p-6 space-y-4 max-h-[70vh] overflow-y-auto overscroll-contain">
+                <form onSubmit={handleSave} className="p-6 space-y-4 max-h-[70vh] overflow-y-auto overscroll-contain" onWheel={(e) => e.stopPropagation()}>
                     <div className="space-y-1.5">
                         <label className="text-sm font-medium text-[var(--text-muted)]">Loan Name</label>
                         <input required type="text" placeholder="e.g. Home Loan, Car EMI..."
@@ -89,42 +92,59 @@ export function LoanModal() {
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-1.5">
+                        <div className="space-y-1.5 col-span-2 sm:col-span-1">
                             <label className="text-sm font-medium text-[var(--text-muted)]">Total Amount (₹)</label>
                             <input required type="number" placeholder="0" min="1"
                                 value={form.total_amount} onChange={(e) => setForm({ ...form, total_amount: e.target.value })}
                                 className="w-full h-11 rounded-xl border border-[var(--border-color)] bg-[var(--bg-color)] px-4 focus:border-blue-500 focus:outline-none transition-all"
                             />
                         </div>
-                        <div className="space-y-1.5">
-                            <label className="text-sm font-medium text-[var(--text-muted)]">EMI Amount (₹)</label>
-                            <input required type="number" placeholder="0" min="1"
-                                value={form.emi_amount} onChange={(e) => setForm({ ...form, emi_amount: e.target.value })}
-                                className="w-full h-11 rounded-xl border border-[var(--border-color)] bg-[var(--bg-color)] px-4 focus:border-blue-500 focus:outline-none transition-all"
+                        <div className="flex items-center space-x-2 pt-6 col-span-2 sm:col-span-1">
+                            <input 
+                                type="checkbox" 
+                                id="addEmiToggle"
+                                checked={addEmi} 
+                                onChange={(e) => setAddEmi(e.target.checked)} 
+                                className="w-4 h-4 rounded border-[var(--border-color)] text-blue-500 focus:ring-blue-500 bg-[var(--bg-color)]"
                             />
+                            <label htmlFor="addEmiToggle" className="text-sm font-medium cursor-pointer">
+                                Include EMI details
+                            </label>
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-1.5">
-                            <label className="text-sm font-medium text-[var(--text-muted)]">EMI Due Date (Day)</label>
-                            <select
-                                value={form.emi_date} onChange={(e) => setForm({ ...form, emi_date: e.target.value })}
-                                className="w-full h-11 rounded-xl border border-[var(--border-color)] bg-[var(--card-color)] px-4 focus:border-blue-500 focus:outline-none"
-                            >
-                                {Array.from({ length: 28 }, (_, i) => i + 1).map(d => (
-                                    <option key={d} value={d}>{d}</option>
-                                ))}
-                            </select>
-                        </div>
-                        <div className="space-y-1.5">
-                            <label className="text-sm font-medium text-[var(--text-muted)]">Interest Rate (%)</label>
-                            <input type="number" step="0.01" placeholder="Optional"
-                                value={form.interest_rate} onChange={(e) => setForm({ ...form, interest_rate: e.target.value })}
-                                className="w-full h-11 rounded-xl border border-[var(--border-color)] bg-[var(--bg-color)] px-4 focus:border-blue-500 focus:outline-none transition-all"
-                            />
-                        </div>
-                    </div>
+                    {addEmi && (
+                        <>
+                            <div className="space-y-1.5">
+                                <label className="text-sm font-medium text-[var(--text-muted)]">EMI Amount (₹)</label>
+                                <input required type="number" placeholder="0" min="1"
+                                    value={form.emi_amount} onChange={(e) => setForm({ ...form, emi_amount: e.target.value })}
+                                    className="w-full h-11 rounded-xl border border-[var(--border-color)] bg-[var(--bg-color)] px-4 focus:border-blue-500 focus:outline-none transition-all"
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-1.5">
+                                    <label className="text-sm font-medium text-[var(--text-muted)]">EMI Due Date (Day)</label>
+                                    <select
+                                        value={form.emi_date} onChange={(e) => setForm({ ...form, emi_date: e.target.value })}
+                                        className="w-full h-11 rounded-xl border border-[var(--border-color)] bg-[var(--card-color)] px-4 focus:border-blue-500 focus:outline-none"
+                                    >
+                                        {Array.from({ length: 28 }, (_, i) => i + 1).map(d => (
+                                            <option key={d} value={d}>{d}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-sm font-medium text-[var(--text-muted)]">Interest Rate (%)</label>
+                                    <input type="number" step="0.01" placeholder="Optional"
+                                        value={form.interest_rate} onChange={(e) => setForm({ ...form, interest_rate: e.target.value })}
+                                        className="w-full h-11 rounded-xl border border-[var(--border-color)] bg-[var(--bg-color)] px-4 focus:border-blue-500 focus:outline-none transition-all"
+                                    />
+                                </div>
+                            </div>
+                        </>
+                    )}
 
                     <div className="space-y-1.5">
                         <label className="text-sm font-medium text-[var(--text-muted)]">Start Date</label>
