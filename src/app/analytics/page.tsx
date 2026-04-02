@@ -1,45 +1,57 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import {
     PieChart as PieChartIcon,
-    BarChart3,
     TrendingUp,
     TrendingDown,
     Wallet,
     IndianRupee,
     ChevronRight,
-    Calendar,
+    ChevronLeft,
     CreditCard,
     BrainCircuit,
-    LayoutDashboard,
-    Files
+    Calendar,
+    BarChart3
 } from "lucide-react";
-import { ReportsView } from "@/components/analytics/ReportsView";
 import {
     PieChart,
     Pie,
     Cell,
     ResponsiveContainer,
     Tooltip,
-    Legend,
-    BarChart,
-    Bar,
-    XAxis,
-    YAxis,
-    CartesianGrid,
-    LabelList
+    Legend
 } from "recharts";
+import { 
+    format, 
+    parseISO, 
+    startOfMonth, 
+    endOfMonth, 
+    startOfISOWeek, 
+    endOfISOWeek, 
+    startOfYear, 
+    endOfYear,
+    subMonths,
+    addMonths,
+    subWeeks,
+    addWeeks,
+    subYears,
+    addYears,
+    isWithinInterval
+} from "date-fns";
 import { storage } from "@/lib/storage";
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#ec4899'];
 
+type FilterType = 'week' | 'month' | 'year';
+
 export default function AnalyticsPage() {
-    const [activeTab, setActiveTab] = useState<'overview' | 'reports'>('overview');
     const [loading, setLoading] = useState(true);
+    const [filterType, setFilterType] = useState<FilterType>('month');
+    const [filterDate, setFilterDate] = useState(new Date());
+    
     const [categoryData, setCategoryData] = useState<any[]>([]);
-    const [accountData, setAccountData] = useState<any[]>([]);
     const [insights, setInsights] = useState<string[]>([]);
     const [summary, setSummary] = useState({
         totalIncome: 0,
@@ -48,6 +60,7 @@ export default function AnalyticsPage() {
         creditDebt: 0
     });
     const [portfolioData, setPortfolioData] = useState({
+        accounts: [] as any[],
         creditCards: [] as any[],
         lendings: { lentAmount: 0, borrowedAmount: 0 },
         loans: 0,
@@ -68,14 +81,32 @@ export default function AnalyticsPage() {
                 const lendings = storage.getLendingEntries();
                 const loans = storage.getLoans();
 
+                // Determine interval
+                let start: Date, end: Date;
+                if (filterType === 'week') {
+                    start = startOfISOWeek(filterDate);
+                    end = endOfISOWeek(filterDate);
+                } else if (filterType === 'month') {
+                    start = startOfMonth(filterDate);
+                    end = endOfMonth(filterDate);
+                } else {
+                    start = startOfYear(filterDate);
+                    end = endOfYear(filterDate);
+                }
+
+                const isInInterval = (dateStr: string) => {
+                    const d = parseISO(dateStr);
+                    return isWithinInterval(d, { start, end });
+                };
+
+                // Filter data based on timeframe
                 let liquidIncome = 0;
                 let liquidExpenses = 0;
                 let totalCreditSpend = 0;
-
                 const catMap: Record<string, { value: number, transactions: any[] }> = {};
 
                 transactions.forEach(t => {
-                    if (t.is_pending) return;
+                    if (t.is_pending || !isInInterval(t.date)) return;
                     if (t.type === 'expense') {
                         const cat = categories.find(c => c.id === t.category_id);
                         const catName = cat?.name || "Other";
@@ -89,6 +120,7 @@ export default function AnalyticsPage() {
                 });
 
                 creditSpends.forEach(s => {
+                    if (!isInInterval(s.date)) return;
                     const cat = categories.find(c => c.id === s.category_id);
                     const catName = cat?.name || "Other";
                     if (!catMap[catName]) catMap[catName] = { value: 0, transactions: [] };
@@ -103,6 +135,7 @@ export default function AnalyticsPage() {
                     transactions: data.transactions.sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime())
                 })).sort((a, b) => b.value - a.value);
 
+                // Account Balances (Currently shows lifetime balance as per storage logic)
                 const accData = accounts.map(acc => {
                     let balance = 0;
                     transactions.forEach(t => {
@@ -111,17 +144,9 @@ export default function AnalyticsPage() {
                             else balance -= t.amount;
                         }
                     });
-                    return { name: acc.name, value: balance, type: 'liquid' };
-                }).filter(a => Math.abs(a.value) > 0);
+                    return { ...acc, balance };
+                });
 
-                const creditData = creditCards.map(card => ({
-                    name: card.name,
-                    value: -card.current_balance,
-                    type: 'credit'
-                })).filter(c => Math.abs(c.value) > 0);
-
-                const totalExp = liquidExpenses;
-                const netBal = liquidIncome - totalExp;
                 const debt = creditCards.reduce((acc, c) => acc + c.current_balance, 0);
 
                 let lentAmount = 0;
@@ -134,17 +159,18 @@ export default function AnalyticsPage() {
                 const totalAssets = assets.reduce((acc, a) => acc + a.current_value, 0);
                 const remainingLoans = loans.reduce((acc, l) => acc + l.remaining_amount, 0);
                 
-                const netWorth = (totalAssets + netBal + lentAmount) - (debt + remainingLoans + borrowedAmount);
+                // Net Worth calculation stays same (overall)
+                const netWorth = (totalAssets + accData.reduce((sum, a) => sum + a.balance, 0) + lentAmount) - (debt + remainingLoans + borrowedAmount);
 
                 setCategoryData(formattedCatData);
-                setAccountData([...accData, ...creditData]);
                 setSummary({
                     totalIncome: liquidIncome,
-                    totalExpenses: totalExp,
-                    netBalance: netBal,
+                    totalExpenses: liquidExpenses + totalCreditSpend,
+                    netBalance: liquidIncome - (liquidExpenses + totalCreditSpend),
                     creditDebt: debt
                 });
                 setPortfolioData({
+                    accounts: accData,
                     creditCards,
                     lendings: { lentAmount, borrowedAmount },
                     loans: remainingLoans,
@@ -155,23 +181,15 @@ export default function AnalyticsPage() {
                 // Generate Insights
                 const generatedInsights: string[] = [];
                 if (liquidIncome > 0) {
-                    const savingsRate = ((netBal / liquidIncome) * 100).toFixed(1);
-                    generatedInsights.push(`You saved ${savingsRate}% of your total inflow this period.`);
+                    const savingsRate = (((liquidIncome - (liquidExpenses + totalCreditSpend)) / liquidIncome) * 100).toFixed(1);
+                    generatedInsights.push(`You saved ${savingsRate}% of your total inflow this ${filterType}.`);
                 }
                 if (formattedCatData.length > 0) {
                     const topCat = formattedCatData[0];
                     const totalCombinedExp = liquidExpenses + totalCreditSpend;
                     const catPct = totalCombinedExp > 0 ? ((topCat.value / totalCombinedExp) * 100).toFixed(1) : "0.0";
-                    generatedInsights.push(`${topCat.name} took the largest chunk of your expenses at ${catPct}%.`);
+                    generatedInsights.push(`${topCat.name} was your highest expense category at ${catPct}%.`);
                 }
-                if (debt > 0 && netBal > 0) {
-                    const debtRatio = ((debt / netBal) * 100).toFixed(1);
-                    generatedInsights.push(`Your credit card dues equal ${debtRatio}% of your current liquid cash.`);
-                }
-                if (totalAssets > 0) {
-                    generatedInsights.push(`You currently hold ₹${totalAssets.toLocaleString()} in registered assets & investments.`);
-                }
-
                 setInsights(generatedInsights);
             } catch (e) {
                 console.error(e);
@@ -180,7 +198,14 @@ export default function AnalyticsPage() {
             }
         };
         fetchData();
-    }, []);
+    }, [filterType, filterDate]);
+
+    const navigateFilter = (direction: 'prev' | 'next') => {
+        const amount = direction === 'prev' ? -1 : 1;
+        if (filterType === 'week') setFilterDate(d => amount === -1 ? subWeeks(d, 1) : addWeeks(d, 1));
+        else if (filterType === 'month') setFilterDate(d => amount === -1 ? subMonths(d, 1) : addMonths(d, 1));
+        else setFilterDate(d => amount === -1 ? subYears(d, 1) : addYears(d, 1));
+    };
 
     const containerVariants = {
         hidden: { opacity: 0 },
@@ -208,36 +233,45 @@ export default function AnalyticsPage() {
             animate="show"
             className="space-y-6"
         >
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex flex-col lg:flex-row items-center justify-between gap-6">
                 <div>
-                    <h1 className="text-2xl font-bold tracking-tight">Financial Analytics</h1>
-                    <p className="text-[var(--text-muted)]">Deep dive into your spending and fund distribution.</p>
+                    <h1 className="text-3xl font-black tracking-tight">Analytics Dashboard</h1>
+                    <p className="text-[var(--text-muted)] font-medium uppercase tracking-widest text-xs mt-1">Deep Intelligence Engine</p>
                 </div>
-                <div className="flex bg-[var(--card-color)] border border-[var(--border-color)] p-1 rounded-xl">
-                    <button
-                        onClick={() => setActiveTab('overview')}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'overview' ? 'bg-blue-500/10 text-blue-400' : 'text-[var(--text-muted)] hover:text-white'}`}
-                    >
-                        <LayoutDashboard className="w-4 h-4" /> Overview
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('reports')}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'reports' ? 'bg-purple-500/10 text-purple-400' : 'text-[var(--text-muted)] hover:text-white'}`}
-                    >
-                        <Files className="w-4 h-4" /> Reports
-                    </button>
+                
+                <div className="flex flex-col sm:flex-row items-center gap-4 bg-[var(--card-color)] p-2 rounded-2xl border border-[var(--border-color)]">
+                    <div className="flex bg-[var(--bg-color)] p-1 rounded-xl border border-white/5">
+                        {(['week', 'month', 'year'] as FilterType[]).map((type) => (
+                            <button
+                                key={type}
+                                onClick={() => setFilterType(type)}
+                                className={`px-4 py-1.5 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${filterType === type ? 'bg-blue-500 text-white shadow-lg' : 'text-[var(--text-muted)] hover:text-white'}`}
+                            >
+                                {type}
+                            </button>
+                        ))}
+                    </div>
+                    
+                    <div className="flex items-center gap-4 px-4 bg-black/20 py-1.5 rounded-xl border border-white/5">
+                        <button onClick={() => navigateFilter('prev')} className="p-1 hover:text-blue-400 transition-colors">
+                            <ChevronLeft className="w-5 h-5" />
+                        </button>
+                        <span className="text-sm font-black whitespace-nowrap min-w-[120px] text-center">
+                            {filterType === 'week' && `Week of ${format(startOfISOWeek(filterDate), 'MMM dd')}`}
+                            {filterType === 'month' && format(filterDate, 'MMMM yyyy')}
+                            {filterType === 'year' && format(filterDate, 'yyyy')}
+                        </span>
+                        <button onClick={() => navigateFilter('next')} className="p-1 hover:text-blue-400 transition-colors">
+                            <ChevronRight className="w-5 h-5" />
+                        </button>
+                    </div>
                 </div>
             </div>
 
-            {activeTab === 'reports' ? (
-                <ReportsView />
-            ) : (
-                <>
-            {/* Top Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <motion.div variants={itemVariants} className="glass p-6 rounded-3xl border-l-4 border-l-emerald-500 shadow-2xl">
                     <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-bold text-white/70">Net Cash Savings</span>
+                        <span className="text-sm font-bold text-white/70">Efficiency (Net)</span>
                         <div className="p-2 bg-emerald-500/20 text-emerald-400 rounded-xl">
                             <Wallet className="w-5 h-5" />
                         </div>
@@ -246,62 +280,61 @@ export default function AnalyticsPage() {
                         <IndianRupee className="w-6 h-6 mr-1" />
                         {summary.netBalance.toLocaleString()}
                     </div>
-                    <div className="text-[10px] text-white/40 mt-2 font-black tracking-widest uppercase">Total Liquid Capital</div>
+                    <div className="text-[10px] text-white/40 mt-2 font-black tracking-widest uppercase">Surplus for this Period</div>
                 </motion.div>
 
-                <motion.div variants={itemVariants} className="glass p-6 rounded-3xl border-l-4 border-l-slate-200 shadow-2xl">
+                <motion.div variants={itemVariants} className="glass p-6 rounded-3xl border-l-4 border-l-blue-500 shadow-2xl">
                     <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-bold text-white/70">Total Cash Inflow</span>
-                        <div className="p-2 bg-slate-200/20 text-slate-200 rounded-xl">
+                        <span className="text-sm font-bold text-white/70">Gross Income</span>
+                        <div className="p-2 bg-blue-500/20 text-blue-400 rounded-xl">
                             <TrendingUp className="w-5 h-5" />
                         </div>
                     </div>
-                    <div className="text-3xl font-black text-slate-100 flex items-center">
+                    <div className="text-3xl font-black text-blue-400 flex items-center">
                         <IndianRupee className="w-6 h-6 mr-1" />
                         {summary.totalIncome.toLocaleString()}
                     </div>
-                    <div className="text-[10px] text-white/40 mt-2 font-black tracking-widest uppercase">Income Velocity</div>
+                    <div className="text-[10px] text-white/40 mt-2 font-black tracking-widest uppercase">Total Inflow</div>
                 </motion.div>
 
                 <motion.div variants={itemVariants} className="glass p-6 rounded-3xl border-l-4 border-l-orange-500 shadow-2xl">
                     <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-bold text-white/70">Net Outflow</span>
+                        <span className="text-sm font-bold text-white/70">Total Spend</span>
                         <div className="p-2 bg-orange-500/20 text-orange-400 rounded-xl">
                             <TrendingDown className="w-5 h-5" />
                         </div>
                     </div>
-                    <div className="text-3xl font-black text-orange-500 flex items-center">
+                    <div className="text-3xl font-black text-orange-400 flex items-center">
                         <IndianRupee className="w-6 h-6 mr-1" />
                         {summary.totalExpenses.toLocaleString()}
                     </div>
-                    <div className="text-[10px] text-white/40 mt-2 font-black tracking-widest uppercase">Total Expenses</div>
+                    <div className="text-[10px] text-white/40 mt-2 font-black tracking-widest uppercase">Liquid + Credit Spend</div>
                 </motion.div>
 
                 <motion.div variants={itemVariants} className="glass p-6 rounded-3xl border-l-4 border-l-red-500 shadow-2xl">
                     <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-bold text-white/70">Total Credit Debt</span>
+                        <span className="text-sm font-bold text-white/70">Debt Exposure</span>
                         <div className="p-2 bg-red-500/20 text-red-400 rounded-xl">
                             <CreditCard className="w-5 h-5" />
                         </div>
                     </div>
-                    <div className="text-3xl font-black text-red-500 flex items-center">
+                    <div className="text-3xl font-black text-red-400 flex items-center">
                         <IndianRupee className="w-6 h-6 mr-1" />
                         {summary.creditDebt.toLocaleString()}
                     </div>
-                    <div className="text-[10px] text-white/40 mt-2 font-black tracking-widest uppercase">Liability Burden</div>
+                    <div className="text-[10px] text-white/40 mt-2 font-black tracking-widest uppercase">Current Liabilities</div>
                 </motion.div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Category Expenses Pie Chart */}
-                <motion.div variants={itemVariants} className="card p-6 flex flex-col h-[450px]">
+                <motion.div variants={itemVariants} className="glass p-6 rounded-3xl">
                     <div className="flex items-center justify-between mb-6">
-                        <h3 className="font-bold text-lg flex items-center">
-                            <PieChartIcon className="w-5 h-5 mr-2 text-purple-500" />
-                            Expense by Category
+                        <h3 className="font-black text-lg flex items-center uppercase tracking-widest">
+                            <PieChartIcon className="w-6 h-6 mr-3 text-purple-500" />
+                            Expense Architecture
                         </h3>
                     </div>
-                    <div className="flex-1 w-full relative">
+                    <div className="h-[350px] w-full relative">
                         {categoryData.length > 0 ? (
                             <ResponsiveContainer width="100%" height="100%">
                                 <PieChart>
@@ -310,120 +343,118 @@ export default function AnalyticsPage() {
                                         cx="50%"
                                         cy="50%"
                                         innerRadius={80}
-                                        outerRadius={110}
-                                        paddingAngle={5}
+                                        outerRadius={120}
+                                        paddingAngle={4}
                                         dataKey="value"
+                                        stroke="none"
                                     >
                                         {categoryData.map((entry, index) => (
                                             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                                         ))}
                                     </Pie>
                                     <Tooltip
-                                        contentStyle={{ backgroundColor: 'var(--card-color)', borderColor: 'var(--border-color)', borderRadius: '12px' }}
-                                        itemStyle={{ color: 'var(--text-color)' }}
+                                        contentStyle={{ backgroundColor: '#0a0a0a', border: '1px solid #333', borderRadius: '16px', color: '#fff' }}
+                                        itemStyle={{ color: '#fff' }}
                                         formatter={(value: any) => `₹${value.toLocaleString()}`}
                                     />
-                                    <Legend iconType="circle" verticalAlign="bottom" height={36} />
+                                    <Legend iconType="circle" layout="vertical" verticalAlign="middle" align="right" />
                                 </PieChart>
                             </ResponsiveContainer>
                         ) : (
-                            <div className="h-full flex flex-col items-center justify-center text-[var(--text-muted)] text-sm italic">
-                                No expense data found.
+                            <div className="h-full flex flex-col items-center justify-center text-[var(--text-muted)] text-sm italic font-bold">
+                                No Transactions Found for this Period
                             </div>
                         )}
                     </div>
                 </motion.div>
 
-                {/* Account Funds Distribution */}
-                <motion.div variants={itemVariants} className="card p-6 flex flex-col h-[450px]">
+                {/* Funds by Account View */}
+                <motion.div variants={itemVariants} className="glass p-6 rounded-3xl">
                     <div className="flex items-center justify-between mb-6">
-                        <h3 className="font-bold text-lg flex items-center">
-                            <BarChart3 className="w-5 h-5 mr-2 text-emerald-500" />
-                            Funds by Account
+                        <h3 className="font-black text-lg flex items-center uppercase tracking-widest">
+                            <BarChart3 className="w-6 h-6 mr-3 text-emerald-500" />
+                            Liquidity Structure
                         </h3>
                     </div>
-                    <div className="flex-1 w-full">
-                        {accountData.length > 0 ? (
-                            <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={accountData} layout="vertical" margin={{ left: 5, right: 30, top: 20, bottom: 20 }}>
-                                    <CartesianGrid strokeDasharray="3 3" horizontal={false} vertical={true} stroke="rgba(255,255,255,0.05)" />
-                                    <XAxis type="number" hide />
-                                    <YAxis
-                                        dataKey="name"
-                                        type="category"
-                                        axisLine={false}
-                                        tickLine={false}
-                                        fontSize={11}
-                                        stroke="#ffffff"
-                                        width={140}
-                                        tick={{ fill: '#ffffff', fontWeight: 'bold', opacity: 0.9 }}
-                                    />
-                                    <Tooltip
-                                        cursor={{ fill: 'rgba(255,255,255,0.05)', radius: 10 }}
-                                        contentStyle={{ backgroundColor: '#000', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '12px', color: '#fff' }}
-                                        formatter={(value: any) => [`₹${Math.abs(value).toLocaleString()}`, value < 0 ? 'LIABILITY' : 'ASSET']}
-                                    />
-                                    <Bar dataKey="value" radius={[0, 10, 10, 0]} barSize={24}>
-                                        {accountData.map((entry, index) => (
-                                            <Cell key={`cell-${index}`} fill={entry.value < 0 ? '#ff3b3b' : '#10b981'} fillOpacity={0.9} />
-                                        ))}
-                                        <LabelList
-                                            dataKey="value"
-                                            position="right"
-                                            formatter={(val: any) => `₹${Math.abs(Number(val) || 0).toLocaleString()}`}
-                                            style={{ fill: 'white', fontSize: 10, fontWeight: 'bold' }}
-                                        />
-                                    </Bar>
-                                </BarChart>
-                            </ResponsiveContainer>
-                        ) : (
-                            <div className="h-full flex flex-col items-center justify-center text-[var(--text-muted)] text-sm italic">
-                                No account data found.
+                    <div className="space-y-5 max-h-[350px] overflow-y-auto custom-scrollbar pr-2 overscroll-contain" onWheel={(e) => e.stopPropagation()}>
+                        {portfolioData.accounts.map((acc, i) => (
+                            <div key={i} className="bg-white/5 border border-white/10 p-4 rounded-2xl">
+                                <div className="flex justify-between items-center mb-2">
+                                    <span className="text-sm font-bold text-white/90">{acc.name}</span>
+                                    <span className="text-sm font-black text-emerald-400">₹{acc.balance.toLocaleString()}</span>
+                                </div>
+                                <div className="w-full bg-white/5 h-2 rounded-full overflow-hidden">
+                                    <div className="h-full bg-emerald-500 w-full opacity-40 shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
+                                </div>
+                                <div className="text-[10px] text-[var(--text-muted)] mt-1 uppercase font-bold tracking-tighter">Liquid Capital</div>
                             </div>
-                        )}
+                        ))}
+                        
+                        {portfolioData.creditCards.map((card, i) => {
+                            const ratio = Math.min(100, (card.current_balance / card.limit) * 100);
+                            return (
+                                <div key={`cc-${i}`} className="bg-red-500/5 border border-red-500/20 p-4 rounded-2xl">
+                                    <div className="flex justify-between items-center mb-2">
+                                        <div className="flex flex-col">
+                                            <span className="text-sm font-bold text-white/90">{card.name}</span>
+                                            <span className="text-[10px] text-red-400/80 uppercase font-black tracking-widest">Credit Liability</span>
+                                        </div>
+                                        <div className="text-right">
+                                            <div className="text-sm font-black text-red-400">₹{card.current_balance.toLocaleString()} Used</div>
+                                            <div className="text-[10px] text-white/40 font-bold">Limit: ₹{card.limit.toLocaleString()}</div>
+                                        </div>
+                                    </div>
+                                    <div className="w-full bg-white/5 h-3 rounded-full overflow-hidden relative">
+                                        <div 
+                                            className="h-full bg-red-600 transition-all duration-1000 shadow-[0_0_10px_rgba(239,68,68,0.5)]" 
+                                            style={{ width: `${ratio}%` }} 
+                                        />
+                                    </div>
+                                    <div className="flex justify-between mt-1">
+                                        <span className="text-[10px] text-white/30 font-bold italic">Utilization: {ratio.toFixed(1)}%</span>
+                                        <span className="text-[10px] text-white/30 font-bold italic">Available: ₹{(card.limit - card.current_balance).toLocaleString()}</span>
+                                    </div>
+                                </div>
+                            );
+                        })}
                     </div>
                 </motion.div>
             </div>
 
-
-            {/* List breakdown */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <motion.div variants={itemVariants} className="card p-6">
-                    <h3 className="font-bold text-sm text-[var(--text-muted)] uppercase tracking-wider mb-4">Detailed Category Analysis</h3>
+                <motion.div variants={itemVariants} className="glass p-6 rounded-3xl">
+                    <h3 className="font-black text-xs text-[var(--text-muted)] uppercase tracking-widest mb-6">Detailed Spend Analysis</h3>
                     <div className="space-y-3">
-                        {categoryData.map((cat, i) => (
-                            <div key={i} className="flex flex-col bg-[var(--bg-color)]/50 rounded-xl overflow-hidden group">
+                        {categoryData.slice(0, 8).map((cat, i) => (
+                            <div key={i} className="flex flex-col bg-white/5 rounded-2xl overflow-hidden group">
                                 <div 
-                                    className="flex items-center justify-between p-3 hover:bg-[var(--bg-color)] cursor-pointer transition-all"
+                                    className="flex items-center justify-between p-4 hover:bg-white/10 cursor-pointer transition-all"
                                     onClick={() => setExpandedCategory(expandedCategory === cat.name ? null : cat.name)}
                                 >
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
-                                        <span className="text-sm font-medium">{cat.name}</span>
-                                    </div>
                                     <div className="flex items-center gap-4">
-                                        <span className="text-sm font-bold text-red-500">₹{cat.value.toLocaleString()}</span>
-                                        <div className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--border-color)] font-bold">
+                                        <div className="w-3 h-3 rounded-full shadow-[0_0_8px_rgba(255,255,255,0.2)]" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
+                                        <span className="text-sm font-bold text-white/80">{cat.name}</span>
+                                    </div>
+                                    <div className="flex items-center gap-6">
+                                        <span className="text-sm font-black text-red-400">₹{cat.value.toLocaleString()}</span>
+                                        <div className="text-[10px] px-2 py-1 rounded-lg bg-black/40 font-black border border-white/5">
                                             {categoryData.reduce((acc, c) => acc + c.value, 0) > 0 ? ((cat.value / categoryData.reduce((acc, c) => acc + c.value, 0)) * 100).toFixed(1) : 0}%
                                         </div>
-                                        <ChevronRight className={`w-4 h-4 text-[var(--border-color)] transition-transform ${expandedCategory === cat.name ? 'rotate-90 text-[var(--text-color)]' : 'group-hover:text-[var(--text-color)]'}`} />
+                                        <ChevronRight className={`w-5 h-5 text-white/20 transition-transform ${expandedCategory === cat.name ? 'rotate-90 text-white' : 'group-hover:text-white'}`} />
                                     </div>
                                 </div>
                                 {expandedCategory === cat.name && cat.transactions && (
-                                    <div className="px-3 pb-3 pt-1 space-y-2 border-t border-[var(--border-color)]/50 bg-black/20">
+                                    <div className="px-4 pb-4 pt-1 space-y-2 border-t border-white/5 bg-black/40">
                                         <div className="max-h-48 overflow-y-auto space-y-2 pr-2 custom-scrollbar overscroll-contain" onWheel={(e) => e.stopPropagation()}>
                                             {cat.transactions.map((tx: any, idx: number) => (
-                                                <div key={idx} className="flex justify-between items-center bg-[var(--card-color)] p-2 rounded-lg">
+                                                <div key={idx} className="flex justify-between items-center bg-white/5 p-3 rounded-xl border border-white/5 hover:border-white/10 transition-all">
                                                     <div>
-                                                        <div className="text-xs font-semibold">{tx.title || tx.notes || "Transaction"}</div>
-                                                        <div className="text-[10px] text-[var(--text-muted)]">{tx.date}</div>
+                                                        <div className="text-xs font-bold text-white/90">{tx.title || "Transaction"}</div>
+                                                        <div className="text-[10px] text-[var(--text-muted)] font-bold">{tx.date}</div>
                                                     </div>
-                                                    <span className="text-xs font-bold text-white/80">₹{tx.amount.toLocaleString()}</span>
+                                                    <span className="text-xs font-black text-white/80">₹{tx.amount.toLocaleString()}</span>
                                                 </div>
                                             ))}
-                                            {cat.transactions.length === 0 && (
-                                                <div className="text-xs text-[var(--text-muted)] p-2 text-center">No transactions found</div>
-                                            )}
                                         </div>
                                     </div>
                                 )}
@@ -432,101 +463,71 @@ export default function AnalyticsPage() {
                     </div>
                 </motion.div>
 
-                <motion.div variants={itemVariants} className="card p-6">
-                    <h3 className="font-bold text-sm text-[var(--text-muted)] uppercase tracking-wider mb-4">Account Portfolio</h3>
-                    <div className="space-y-3">
-                        {accountData.map((acc, i) => (
-                            <div key={i} className="flex items-center justify-between p-3 rounded-xl bg-[var(--bg-color)]/50 hover:bg-[var(--bg-color)] transition-all group">
-                                <span className="text-sm font-medium">{acc.name}</span>
-                                <div className="flex items-center gap-4">
-                                    <span className={`text-sm font-bold ${acc.value < 0 ? 'text-red-500' : 'text-emerald-500'}`}>
-                                        ₹{Math.abs(acc.value).toLocaleString()}
-                                    </span>
-                                    <div className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--border-color)] font-bold">
-                                        {acc.value > 0 ? ((acc.value / Math.max(1, summary.netBalance)) * 100).toFixed(1) : 0}%
-                                    </div>
+                <motion.div variants={itemVariants} className="glass p-6 rounded-3xl">
+                    <h3 className="font-black text-xs text-[var(--text-muted)] uppercase tracking-widest mb-6">Asset vs Liability Matrix</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                         <div className="p-5 rounded-2xl bg-white/5 border border-white/10">
+                            <h4 className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-4">Capital Outflow</h4>
+                            <div className="space-y-4">
+                                <div className="flex justify-between items-center text-sm">
+                                    <span className="font-bold text-white/70">Owed to People</span>
+                                    <span className="text-red-400 font-black">₹{portfolioData.lendings.borrowedAmount.toLocaleString()}</span>
+                                </div>
+                                <div className="flex justify-between items-center text-sm">
+                                    <span className="font-bold text-white/70">Remaining Loans</span>
+                                    <span className="text-red-400 font-black">₹{portfolioData.loans.toLocaleString()}</span>
                                 </div>
                             </div>
-                        ))}
-                    </div>
-                </motion.div>
+                        </div>
 
-                {/* Additional Portfolio Details */}
-                <motion.div variants={itemVariants} className="card p-6 lg:col-span-2">
-                    <h3 className="font-bold text-sm text-[var(--text-muted)] uppercase tracking-wider mb-4">Comprehensive Portfolio</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        <div className="p-4 rounded-xl bg-[var(--bg-color)]/50 border border-[var(--border-color)]">
-                            <h4 className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider mb-2">Credit Cards</h4>
-                            <div className="space-y-2">
-                                {portfolioData.creditCards.map((card: any, i: number) => (
-                                    <div key={i} className="flex justify-between items-center text-sm">
-                                        <span>{card.name}</span>
-                                        <span className="text-red-400 font-bold">₹{card.current_balance.toLocaleString()} / ₹{card.limit.toLocaleString()}</span>
-                                    </div>
-                                ))}
-                                {portfolioData.creditCards.length === 0 && <p className="text-xs text-[var(--text-muted)] italic">No credit cards</p>}
+                        <div className="p-5 rounded-2xl bg-white/5 border border-white/10">
+                            <h4 className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest mb-4">Capital Appraisal</h4>
+                            <div className="space-y-4">
+                                <div className="flex justify-between items-center text-sm">
+                                    <span className="font-bold text-white/70">Owed to You</span>
+                                    <span className="text-emerald-400 font-black">₹{portfolioData.lendings.lentAmount.toLocaleString()}</span>
+                                </div>
+                                <div className="flex justify-between items-center text-sm">
+                                    <span className="font-bold text-white/70">Asset Valuation</span>
+                                    <span className="text-emerald-400 font-black">₹{portfolioData.assets.toLocaleString()}</span>
+                                </div>
                             </div>
                         </div>
 
-                        <div className="p-4 rounded-xl bg-[var(--bg-color)]/50 border border-[var(--border-color)]">
-                            <h4 className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider mb-2">Lending & Borrowing</h4>
-                            <div className="flex justify-between items-center text-sm mb-2">
-                                                <span>Owed to You</span>
-                                                <span className="text-emerald-400 font-bold">₹{portfolioData.lendings.lentAmount.toLocaleString()}</span>
-                                            </div>
-                                        </div>
-
-                        <div className="p-4 rounded-xl bg-[var(--bg-color)]/50 border border-[var(--border-color)]">
-                            <h4 className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider mb-2">Loans & EMIs</h4>
-                            <div className="flex justify-between items-center text-sm">
-                                <span>Total Remaining</span>
-                                <span className="text-red-400 font-bold">₹{portfolioData.loans.toLocaleString()}</span>
-                            </div>
-                        </div>
-
-                        <div className="p-4 rounded-xl bg-[var(--bg-color)]/50 border border-[var(--border-color)]">
-                            <h4 className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider mb-2">Assets</h4>
-                            <div className="flex justify-between items-center text-sm">
-                                <span>Total Valuation</span>
-                                <span className="text-emerald-400 font-bold">₹{portfolioData.assets.toLocaleString()}</span>
-                            </div>
-                        </div>
-
-                        <div className="p-4 rounded-xl bg-[var(--bg-color)]/50 border border-[var(--border-color)] lg:col-span-2">
-                            <h4 className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider mb-2">Net Worth</h4>
-                            <div className="text-3xl font-black text-white/90">
+                        <div className="p-6 rounded-3xl bg-gradient-to-br from-blue-600/20 to-purple-600/20 border border-blue-500/20 md:col-span-2">
+                            <h4 className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-2">Total Net Worth</h4>
+                            <div className="text-4xl font-black text-white decoration-blue-500/50 underline-offset-8">
                                 ₹{portfolioData.netWorth.toLocaleString()}
                             </div>
-                            <p className="text-[10px] text-[var(--text-muted)] mt-1">(Assets + Liquid + Owed to You) - (Credit + Loans + You Owe)</p>
+                            <p className="text-[10px] text-white/40 mt-3 font-bold italic leading-relaxed">
+                                Calculated across all liquid accounts, registered assets, and total liability exposure.
+                            </p>
                         </div>
                     </div>
                 </motion.div>
             </div>
 
-            {/* AI Insights Module */}
-            <motion.div variants={itemVariants} className="card p-6 bg-gradient-to-br from-[var(--card-color)] to-[var(--bg-color)] border border-emerald-500/20 shadow-xl shadow-emerald-500/5 relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none" />
-                <h3 className="font-bold text-lg flex items-center mb-4 text-emerald-400">
-                    <BrainCircuit className="w-5 h-5 mr-2" />
-                    Data Insights
+            <motion.div variants={itemVariants} className="glass p-8 rounded-[40px] bg-gradient-to-br from-emerald-500/10 via-transparent to-blue-500/10 border border-emerald-500/20 relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-500/10 rounded-full blur-[100px] -mr-48 -mt-48 pointer-events-none animate-pulse" />
+                <h3 className="font-black text-xl flex items-center mb-6 text-emerald-400 uppercase tracking-widest">
+                    <BrainCircuit className="w-8 h-8 mr-4" />
+                    Cognitive Insights
                 </h3>
                 {insights.length > 0 ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 relative z-10">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {insights.map((insight, idx) => (
-                            <div key={idx} className="flex items-start gap-3 p-4 rounded-2xl bg-black/20 border border-white/5 backdrop-blur-sm">
-                                <div className="p-1.5 rounded-full bg-emerald-500/20 text-emerald-400 mt-0.5">
-                                    <ChevronRight className="w-3 h-3" />
+                            <div key={idx} className="flex items-start gap-5 p-6 rounded-3xl bg-black/30 border border-white/5 backdrop-blur-xl group hover:border-emerald-500/30 transition-all shadow-2xl">
+                                <div className="p-2 rounded-2xl bg-emerald-500/20 text-emerald-400 group-hover:scale-110 transition-transform">
+                                    <ChevronRight className="w-4 h-4" />
                                 </div>
-                                <p className="text-sm font-medium tracking-wide leading-relaxed text-white/90">{insight}</p>
+                                <p className="text-sm font-bold tracking-wide leading-relaxed text-white/90">{insight}</p>
                             </div>
                         ))}
                     </div>
                 ) : (
-                    <p className="text-sm text-[var(--text-muted)] italic relative z-10">Record more transactions to generate personalized insights.</p>
+                    <p className="text-sm text-[var(--text-muted)] italic font-bold">Establishing data patterns... Record more financial operations to activate.</p>
                 )}
             </motion.div>
-                </>
-            )}
         </motion.div>
     );
 }
