@@ -102,7 +102,7 @@ export function Sidebar() {
                         <span className="z-10">Settings</span>
                     </Link>
                     <div className="pt-4 pb-2 text-center text-[10px] font-bold tracking-widest text-[var(--text-muted)] uppercase">
-                        v0.2.13
+                        v0.2.15
                     </div>
                 </div>
             </div>

@@ -165,8 +165,8 @@ export default function AnalyticsPage() {
                 setCategoryData(formattedCatData);
                 setSummary({
                     totalIncome: liquidIncome,
-                    totalExpenses: liquidExpenses + totalCreditSpend,
-                    netBalance: liquidIncome - (liquidExpenses + totalCreditSpend),
+                    totalExpenses: liquidExpenses,
+                    netBalance: liquidIncome - liquidExpenses,
                     creditDebt: debt
                 });
                 setPortfolioData({
@@ -181,12 +181,12 @@ export default function AnalyticsPage() {
                 // Generate Insights
                 const generatedInsights: string[] = [];
                 if (liquidIncome > 0) {
-                    const savingsRate = (((liquidIncome - (liquidExpenses + totalCreditSpend)) / liquidIncome) * 100).toFixed(1);
+                    const savingsRate = (((liquidIncome - liquidExpenses) / liquidIncome) * 100).toFixed(1);
                     generatedInsights.push(`You saved ${savingsRate}% of your total inflow this ${filterType}.`);
                 }
                 if (formattedCatData.length > 0) {
                     const topCat = formattedCatData[0];
-                    const totalCombinedExp = liquidExpenses + totalCreditSpend;
+                    const totalCombinedExp = liquidExpenses;
                     const catPct = totalCombinedExp > 0 ? ((topCat.value / totalCombinedExp) * 100).toFixed(1) : "0.0";
                     generatedInsights.push(`${topCat.name} was your highest expense category at ${catPct}%.`);
                 }
@@ -271,7 +271,7 @@ export default function AnalyticsPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <motion.div variants={itemVariants} className="glass p-6 rounded-3xl border-l-4 border-l-emerald-500 shadow-2xl">
                     <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-bold text-white/70">Efficiency (Net)</span>
+                        <span className="text-sm font-bold text-white/70">Current Liquidity</span>
                         <div className="p-2 bg-emerald-500/20 text-emerald-400 rounded-xl">
                             <Wallet className="w-5 h-5" />
                         </div>
@@ -308,7 +308,7 @@ export default function AnalyticsPage() {
                         <IndianRupee className="w-6 h-6 mr-1" />
                         {summary.totalExpenses.toLocaleString()}
                     </div>
-                    <div className="text-[10px] text-white/40 mt-2 font-black tracking-widest uppercase">Liquid + Credit Spend</div>
+                    <div className="text-[10px] text-white/40 mt-2 font-black tracking-widest uppercase">Direct Capital Outflow</div>
                 </motion.div>
 
                 <motion.div variants={itemVariants} className="glass p-6 rounded-3xl border-l-4 border-l-red-500 shadow-2xl">

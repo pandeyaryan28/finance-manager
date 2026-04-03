@@ -103,7 +103,7 @@ export default function Dashboard() {
         const savingsRate = liquidIncome > 0 ? ((liquidIncome - liquidExpenses) / liquidIncome) * 100 : 0;
 
         setStats({
-          balance: liquidIncome - liquidExpenses,
+          balance: accountsWithBalance.reduce((sum, acc) => sum + acc.balance, 0),
           income: liquidIncome,
           expenses: liquidExpenses,
           savingsRate: Math.max(0, savingsRate),
